@@ -9,18 +9,21 @@ export type Database = {
           id: number;
           topic: string | null;
           user_id: number;
+          uuid: string;
         };
         Insert: {
           created_at?: string;
           id?: number;
           topic?: string | null;
           user_id: number;
+          uuid: string;
         };
         Update: {
           created_at?: string;
           id?: number;
           topic?: string | null;
           user_id?: number;
+          uuid?: string;
         };
         Relationships: [
           {
@@ -38,18 +41,24 @@ export type Database = {
           conversation_id: number;
           created_at: string;
           id: number;
+          isAskingForMoreInformation: boolean | null;
+          role: string;
         };
         Insert: {
           content: string;
           conversation_id: number;
           created_at?: string;
           id?: number;
+          isAskingForMoreInformation?: boolean | null;
+          role?: string;
         };
         Update: {
           content?: string;
           conversation_id?: number;
           created_at?: string;
           id?: number;
+          isAskingForMoreInformation?: boolean | null;
+          role?: string;
         };
         Relationships: [
           {
@@ -57,6 +66,38 @@ export type Database = {
             columns: ['conversation_id'];
             isOneToOne: false;
             referencedRelation: 'conversation';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      knowledge: {
+        Row: {
+          confidence_score: number | null;
+          content: string;
+          created_at: string;
+          id: number;
+          user_id: number | null;
+        };
+        Insert: {
+          confidence_score?: number | null;
+          content: string;
+          created_at?: string;
+          id?: number;
+          user_id?: number | null;
+        };
+        Update: {
+          confidence_score?: number | null;
+          content?: string;
+          created_at?: string;
+          id?: number;
+          user_id?: number | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'knowledge_user_id_fkey';
+            columns: ['user_id'];
+            isOneToOne: false;
+            referencedRelation: 'user';
             referencedColumns: ['id'];
           },
         ];

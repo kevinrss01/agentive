@@ -4,7 +4,6 @@ import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '@/lib/utils';
 import { JSX } from 'react/jsx-runtime';
 import { useAuth } from '@/hooks/useAuth';
-import { divider } from '@heroui/react';
 
 export const FloatingNav = ({
   navItems,
