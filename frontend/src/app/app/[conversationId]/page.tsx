@@ -1,27 +1,18 @@
 'use client';
 
-import { useConversation } from '@/hooks/useConversation';
+import { useConversation, ConversationMessage } from '@/hooks/useConversation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/utils/cn';
 import DOMPurify from 'dompurify';
 import { Input } from '@heroui/react';
 import { IoSend } from 'react-icons/io5';
 import { ExclamationTriangleIcon } from '@heroicons/react/16/solid';
+import { useAuth } from '@/hooks/useAuth';
 import { MicrophoneIcon } from '@heroicons/react/24/outline';
 import { useState, useRef, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 
-type Message = {
-  id: string | number;
-  type?: 'text' | 'audio';
-  content: string;
-  role: 'assistant' | 'user';
-  timestamp: Date;
-  isProgress?: boolean;
-  isAskingForMoreInformation?: boolean;
-};
-
-function ChatBubble({ message }: { message: Message }) {
+function ChatBubble({ message }: { message: ConversationMessage }) {
   const user = message.role === 'user';
 
   return (
@@ -154,7 +145,7 @@ function ChatBubble({ message }: { message: Message }) {
   );
 }
 
-const ChatInterface = ({ messages }: { messages: Message[] }) => {
+const ChatInterface = ({ messages }: { messages: ConversationMessage[] }) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -222,15 +213,92 @@ export default function ConversationPage() {
   const params = useParams();
   const conversationId = params.conversationId as string;
   const [inputValue, setInputValue] = useState('');
+  const { accessToken } = useAuth();
 
-  const { messages, isLoading, error, isConnected } = useConversation(conversationId);
+  const { messages, isLoading, error, isConnected, addMessage, isProcessing } =
+    useConversation(conversationId);
+
+  const sendMessage = async (message: string) => {
+    if (!message.trim() || !accessToken || isProcessing) return;
+
+    // Add the user message to the local state immediately
+    addMessage({
+      type: 'text',
+      role: 'user',
+      content: message,
+    });
+
+    try {
+      // Check if the last AI message is asking for more information
+      const lastAssistantMessage = messages
+        .filter((msg) => msg.role === 'assistant' && !msg.isProgress)
+        .slice(-1)[0];
+
+      const isAskingForMoreInfo = lastAssistantMessage?.isAskingForMoreInformation;
+
+      // Prepare conversation history for API
+      const conversationHistory = messages.map((msg) => ({
+        id: String(msg.id),
+        type: msg.type || 'text',
+        content: msg.content || '',
+        role: msg.role,
+        timestamp: msg.timestamp.toISOString(),
+      }));
+
+      // Choose the appropriate route based on whether AI is asking for more info
+      const endpoint = isAskingForMoreInfo
+        ? `${process.env.NEXT_PUBLIC_BASE_URL_BACKEND}/api/transcribe`
+        : `${process.env.NEXT_PUBLIC_BASE_URL_BACKEND}/api/transcribe/conversation`;
+
+      let body;
+      if (isAskingForMoreInfo) {
+        // Combine the first user message with the new message
+        const firstUserMessage = messages.find((msg) => msg.role === 'user')?.content || '';
+        const combinedMessage = `${firstUserMessage}\n\nAdditional information: ${message}`;
+
+        body = {
+          data: combinedMessage,
+          uuid: conversationId,
+        };
+      } else {
+        body = {
+          conversationId,
+          newMessage: message,
+          conversationHistory,
+        };
+      }
+
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify(body),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const result = await response.json();
+      console.log('Message sent successfully:', result);
+    } catch (error) {
+      console.error('Error sending message:', error);
+    }
+  };
 
   const handleSendMessage = () => {
-    if (!inputValue.trim()) return;
-
-    // TODO: Implement message sending logic here
-    console.log('Sending message:', inputValue);
+    if (!inputValue.trim() || isProcessing) return;
+    sendMessage(inputValue);
     setInputValue('');
+  };
+
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSendMessage();
+    }
   };
 
   return (
@@ -273,11 +341,16 @@ export default function ConversationPage() {
           <Input
             value={inputValue}
             onValueChange={setInputValue}
-            placeholder="Type your message..."
+            onKeyDown={handleKeyPress}
+            placeholder={isProcessing ? 'AI is processing...' : 'Type your message...'}
             size="lg"
             variant="bordered"
+            isDisabled={isProcessing}
             endContent={
-              <div className="cursor-pointer" onClick={handleSendMessage}>
+              <div
+                className={`cursor-pointer ${isProcessing ? 'opacity-50 cursor-not-allowed' : ''}`}
+                onClick={handleSendMessage}
+              >
                 <IoSend size={20} />
               </div>
             }

@@ -1,9 +1,11 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import { useAgentWebSocket } from '@/hooks/useAgentWebSocket';
 import { useAuth } from '@/hooks/useAuth';
+import { displayToast } from '@/utils/sonnerToast';
 
 export type ConversationMessage = {
   id: string | number;
+  type?: 'text' | 'audio';
   role: 'user' | 'assistant';
   content: string;
   timestamp: Date;
@@ -12,17 +14,41 @@ export type ConversationMessage = {
 };
 
 export function useConversation(conversationId: string | undefined) {
-  const { accessToken } = useAuth();
+  const { accessToken, isLoading: authLoading } = useAuth();
 
   const [messages, setMessages] = useState<ConversationMessage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
+  const [isProcessing, setIsProcessing] = useState(false);
 
   const progressMessageIdRef = useRef<string>('progress');
+
+  // Add message to local state
+  const addMessage = useCallback((message: Omit<ConversationMessage, 'id' | 'timestamp'>) => {
+    const newMessage: ConversationMessage = {
+      id: `${message.role}-${Date.now()}-${Math.random()}`,
+      timestamp: new Date(),
+      ...message,
+    };
+
+    setMessages((prev) => [...prev, newMessage]);
+
+    // If it's a user message, set processing to true
+    if (message.role === 'user') {
+      setIsProcessing(true);
+    }
+
+    return newMessage;
+  }, []);
 
   /** Fetch existing messages on mount / when conversationId changes */
   useEffect(() => {
     if (!conversationId) return;
+
+    // Don't fetch if auth is still loading or if there's no access token
+    if (authLoading || !accessToken) {
+      return;
+    }
 
     const controller = new AbortController();
 
@@ -30,6 +56,13 @@ export function useConversation(conversationId: string | undefined) {
       try {
         setIsLoading(true);
         setError(null);
+
+        console.log('🔐 Frontend Debug: accessToken length:', accessToken?.length);
+        console.log(
+          '🔐 Frontend Debug: accessToken starts with:',
+          accessToken?.substring(0, 20) + '...'
+        );
+
         const res = await fetch(
           `${process.env.NEXT_PUBLIC_BASE_URL_BACKEND}/api/conversations/${conversationId}`,
           {
@@ -40,17 +73,23 @@ export function useConversation(conversationId: string | undefined) {
             signal: controller.signal,
           }
         );
-        if (!res.ok) throw new Error('Failed to load messages');
+        if (!res.ok) {
+          const errorText = await res.text();
+          console.error('❌ Frontend Debug: API Error Response:', errorText);
+          throw new Error('Failed to load messages');
+        }
         const json = await res.json();
         // Assume json.data already matches the expected shape except timestamp
         const initial: ConversationMessage[] = json.data.map((m: any) => ({
           id: m.id,
+          type: m.type || 'text',
           role: m.role,
           content: m.content,
           timestamp: new Date(m.created_at),
         }));
         setMessages(initial);
       } catch (err: any) {
+        console.error(err.message);
         if (err.name !== 'AbortError') {
           setError(err);
         }
@@ -62,7 +101,7 @@ export function useConversation(conversationId: string | undefined) {
     fetchMessages();
 
     return () => controller.abort();
-  }, [conversationId, accessToken]);
+  }, [conversationId, accessToken, authLoading]);
 
   /** Handle sessionStorage initial user message (draft) */
   useEffect(() => {
@@ -72,6 +111,7 @@ export function useConversation(conversationId: string | undefined) {
       setMessages((prev) => [
         {
           id: 'initial-local',
+          type: 'text',
           role: 'user',
           content: stored,
           timestamp: new Date(),
@@ -86,9 +126,11 @@ export function useConversation(conversationId: string | undefined) {
   const { isConnected } = useAgentWebSocket({
     conversationId,
     onProgress: (progress) => {
+      setIsProcessing(true);
       setMessages((prev) => {
         const newMsg: ConversationMessage = {
           id: progressMessageIdRef.current,
+          type: 'text',
           role: 'assistant',
           content: progress.message,
           timestamp: new Date(progress.timestamp),
@@ -105,12 +147,14 @@ export function useConversation(conversationId: string | undefined) {
       });
     },
     onFinalResponse: (final) => {
+      setIsProcessing(false);
       setMessages((prev) => {
         const withoutProgress = prev.filter((m) => m.id !== progressMessageIdRef.current);
         return [
           ...withoutProgress,
           {
             id: `assistant-${Date.now()}`,
+            type: 'text',
             role: 'assistant',
             content: final.message,
             timestamp: new Date(final.timestamp),
@@ -121,6 +165,7 @@ export function useConversation(conversationId: string | undefined) {
     },
     onError: (err) => {
       console.error('WebSocket error', err);
+      setIsProcessing(false);
       // remove progress if exists
       setMessages((prev) => prev.filter((m) => m.id !== progressMessageIdRef.current));
     },
@@ -129,5 +174,5 @@ export function useConversation(conversationId: string | undefined) {
   // Sort messages once before returning
   const sortedMessages = messages.sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
 
-  return { messages: sortedMessages, isLoading, error, isConnected };
+  return { messages: sortedMessages, isLoading, error, isConnected, addMessage, isProcessing };
 }

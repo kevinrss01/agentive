@@ -1,3 +1,5 @@
+import { Message } from '@/types/types';
+
 export const htmlInstructions = `
 ### HTML ELEMENTS TO USE ###
       - <h2>, <h3> for section headers
@@ -87,6 +89,66 @@ export class PromptsService {
 
       RETURN ONLY the plain text response, nothing else. No JSON, no quotes, no commentary, no markdown, no HTML, no code blocks, just the plain text response.
 `;
+  }
+
+  getPromptToTransformNewMessageToAgentPrompt(
+    conversationHistory: Message[],
+    newMessage: string
+  ): string {
+    return `
+      ### TASK ###
+      Transform the user's new message into a structured third-person format for the travel agent system.
+      I will give you the all conversation history between the user and the agent.
+      And your role is to understand the user's new message and transform it into a structured third-person format for the travel agent system.
+      It can be most of the time a new question or a new message, but it can also be a new request for the same question.
+      You have to understand the user's new message and transform it into a structured third-person format for the travel agent system.
+      This agent should make a new research on the web based on the user's new message.
+
+      ### CONVERSATION HISTORY ###
+      """
+      ${conversationHistory.map((message) => message.content).join('\n')}
+      """
+
+      ### NEW MESSAGE ###
+      """
+      ${newMessage}
+      """
+
+      RETURN ONlY the agent prompt, nothing else.
+
+    `;
+  }
+
+  getPromptToTransformNewMessageToReadable(
+    agentResponse: string,
+    newMessage: string,
+    conversationHistory: Message[]
+  ): string {
+    return `
+      ### TASK ###
+      The user already received his first guide, but he asked for a new question or he just had a new message, and so we made a new research based on his last message.
+      The user agent returned something else, so you have to adapt it and respond with the agent request based on the user request.
+ 
+       You have to make something readable. You don't need to say "hello again" because this is a new message in a conversation. Please understand that and just answer in HTML.
+       Return in language of the user.
+
+      ### AGENT RESPONSE ###
+      """
+      ${agentResponse}
+      """
+
+      ### NEW MESSAGE ###
+      """
+      ${newMessage}
+      """
+
+      ### CONVERSATION HISTORY ###
+      """
+      ${conversationHistory.map((message) => message.content).join('\n')}
+      """
+
+
+    `;
   }
 
   getPromptToTransformAgentResponseToReadable(
