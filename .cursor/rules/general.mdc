@@ -1,0 +1,27 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# Here is some information you have to keep in mind when working on this project.
+
+## Context 
+
+"""
+
+## About the Project Itself
+
+"""
+
+## Instructions to Respect When You Code
+
+- Your code should be ALWAYS in english
+- Always use arrow functions when creating React components.
+- Always type your useState properly like this:
+  `const [name, setName] = useState<string>('John')`
+- Do not define complex types inside components—place them in type definition files inside the `types` folder.
+- Use the latest React 18 features and hooks as much as possible: `useOptimistic`, `useActionState`, `useFormStatus`, and `use`. Check the official blog: https://react.dev/blog/2024/12/05/react-19
+- Fully leverage the new features of Next.js version 15.
+- Make full use of Tailwind CSS version 4 features: https://tailwindcss.com/blog/tailwindcss-v4
+- Do not overengineer—always choose simple, short, and concise solutions.
+- DO NOT add useless comments in the code.
