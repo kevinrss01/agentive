@@ -1,4 +1,7 @@
+'use client';
+
 import { displayToast } from '@/utils/sonnerToast';
+import { useRouter } from 'next/navigation';
 import { useState, useEffect, useCallback } from 'react';
 
 export interface User {
@@ -44,6 +47,8 @@ export const useAuth = () => {
     });
   }, []);
 
+  const router = useRouter();
+
   useEffect(() => {
     const initializeAuth = async () => {
       const user = localStorage.getItem('user');
@@ -85,6 +90,10 @@ export const useAuth = () => {
           logout();
         }
       } else {
+        if (!user && !accessToken) {
+          router.push('/login');
+          logout();
+        }
         setAuthState((prev) => ({ ...prev, isLoading: false }));
       }
     };

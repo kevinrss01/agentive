@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useAgentWebSocket } from '@/hooks/useAgentWebSocket';
 import { useAuth } from '@/hooks/useAuth';
+import { displayToast } from '@/utils/sonnerToast';
 
 export type ConversationMessage = {
   id: string | number;
@@ -31,6 +32,13 @@ export function useConversation(conversationId: string | undefined) {
       try {
         setIsLoading(true);
         setError(null);
+
+        console.log('🔐 Frontend Debug: accessToken length:', accessToken?.length);
+        console.log(
+          '🔐 Frontend Debug: accessToken starts with:',
+          accessToken?.substring(0, 20) + '...'
+        );
+
         const res = await fetch(
           `${process.env.NEXT_PUBLIC_BASE_URL_BACKEND}/api/conversations/${conversationId}`,
           {
@@ -41,7 +49,11 @@ export function useConversation(conversationId: string | undefined) {
             signal: controller.signal,
           }
         );
-        if (!res.ok) throw new Error('Failed to load messages');
+        if (!res.ok) {
+          const errorText = await res.text();
+          console.error('❌ Frontend Debug: API Error Response:', errorText);
+          throw new Error('Failed to load messages');
+        }
         const json = await res.json();
         // Assume json.data already matches the expected shape except timestamp
         const initial: ConversationMessage[] = json.data.map((m: any) => ({
@@ -53,6 +65,8 @@ export function useConversation(conversationId: string | undefined) {
         }));
         setMessages(initial);
       } catch (err: any) {
+        displayToast.error('Failed to load messages');
+        console.error(err.message);
         if (err.name !== 'AbortError') {
           setError(err);
         }

@@ -33,25 +33,36 @@ export const authenticateJWT = (
     const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
 
     if (!token) {
-      console.error('No token provided');
+      console.error('JWT Auth Error: No token provided');
       res.status(401).json({ error: 'Unauthorized' });
       return;
     }
+
+    console.log('JWT Auth Debug: Token length:', token.length);
+    console.log('JWT Auth Debug: Token starts with:', token.substring(0, 20) + '...');
+    console.log('JWT Auth Debug: JWT Secret exists:', !!config.jwt.secret);
 
     const decoded = jwt.verify(token, config.jwt.secret) as { user: UserData };
 
     if (!decoded.user) {
-      console.error('Invalid JWT token');
+      console.error('JWT Auth Error: Invalid JWT token - no user in payload');
       res.status(401).json({ error: 'Unauthorized' });
       return;
     }
+
+    console.log('JWT Auth Success: User authenticated:', decoded.user.email);
 
     // Add user info to request
     req.user = decoded.user;
 
     next();
   } catch (error: unknown) {
-    console.error('JWT authentication middleware error:', error);
+    if (error instanceof jwt.JsonWebTokenError) {
+      console.error('JWT authentication error (JsonWebTokenError):', error.message);
+      console.error('Error name:', error.name);
+    } else {
+      console.error('JWT authentication middleware error:', error);
+    }
     res.status(401).json({ error: 'Unauthorized' });
   }
 };

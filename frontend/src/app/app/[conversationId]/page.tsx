@@ -223,7 +223,7 @@ export default function ConversationPage() {
     try {
       // Prepare conversation history for API
       const conversationHistory = messages.map((msg) => ({
-        id: msg.id,
+        id: String(msg.id),
         type: msg.type || 'text',
         content: msg.content || '',
         role: msg.role,
