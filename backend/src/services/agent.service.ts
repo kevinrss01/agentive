@@ -55,8 +55,6 @@ export class AgentService {
 
       const result = await run(this.agent, prompt);
 
-      console.log('Result:', result);
-
       const endTime = Date.now();
       const duration = ((endTime - startTime) / 1000).toFixed(2);
 

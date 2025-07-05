@@ -19,6 +19,12 @@ router.post(
   asyncHandler(transcribeController.process)
 );
 
+router.post(
+  '/conversation',
+  authenticateJWT,
+  asyncHandler(transcribeController.processWithHistory)
+);
+
 // router.get('/:id', asyncHandler(transcribeController.getById));
 // router.post('/', asyncHandler(transcribeController.create));
 // router.put('/:id', asyncHandler(transcribeController.update));

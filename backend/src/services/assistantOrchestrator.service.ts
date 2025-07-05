@@ -5,6 +5,7 @@ import { PromptsService } from './prompts/prompts.service';
 import { instructions } from './prompts/instructions';
 import { AgentService } from './agent.service';
 import { SocketIOService } from './socketio.service';
+import { Message } from '@/types/types';
 
 export class AssistantOrchestratorService {
   private speechToTextService = new SpeechToTextService();
@@ -31,6 +32,91 @@ export class AssistantOrchestratorService {
       isCorrect: llamaResponse.toLowerCase().includes('true'),
       response: llamaResponse,
     };
+  };
+
+  processNewMessage = async ({
+    conversationHistory,
+    newMessage,
+    conversationId,
+  }: {
+    conversationHistory: Message[];
+    newMessage: string;
+    conversationId?: string;
+  }) => {
+    try {
+      if (conversationId) {
+        console.log(`📤 Sending progress to room ${conversationId}: 'Processing your request...'`);
+        this.socketIOService.sendProgress(conversationId, 'Processing your request...');
+      }
+
+      const prompt = this.promptsService.getPromptToTransformNewMessageToAgentPrompt(
+        conversationHistory,
+        newMessage
+      );
+
+      console.debug('initial prompt', prompt);
+
+      const llamaInstructions = instructions.llamaBaseInstructions;
+
+      if (conversationId) {
+        console.log(`📤 Sending progress to room ${conversationId}: 'Analyzing your query...'`);
+        this.socketIOService.sendProgress(conversationId, 'Analyzing your query...');
+      }
+
+      const llamaResponse = await this.llamaService.promptLlama({
+        instructions: llamaInstructions,
+        prompt,
+      });
+
+      console.debug('llamaResponse', llamaResponse);
+
+      if (conversationId) {
+        console.log(
+          `📤 Sending progress to room ${conversationId}: 'The agent is researching the best options for you...'`
+        );
+        this.socketIOService.sendProgress(
+          conversationId,
+          'The agent is researching the best options for you...'
+        );
+      }
+
+      const agentResponse = await this.agentService.researchTravel(llamaResponse, conversationId);
+
+      if (conversationId) {
+        console.log(
+          `📤 Sending progress to room ${conversationId}: 'Preparing your personalized response...'`
+        );
+        this.socketIOService.sendProgress(
+          conversationId,
+          'The agent is researching the best options for you...'
+        );
+      }
+
+      const promptToTransformAgentResponseToReadable =
+        this.promptsService.getPromptToTransformNewMessageToReadable(
+          agentResponse.response,
+          newMessage,
+          conversationHistory
+        );
+
+      const readableResponse = await this.llamaService.promptLlama({
+        instructions: llamaInstructions,
+        prompt: promptToTransformAgentResponseToReadable,
+      });
+
+      console.debug('readableResponse', readableResponse);
+
+      if (conversationId) {
+        console.log(`📤 Sending final response to room ${conversationId}`);
+        this.socketIOService.sendFinalResponse({
+          conversationId,
+          message: readableResponse,
+          isAskingForMoreInformation: false,
+        });
+      }
+    } catch (error) {
+      console.error('Error in processNewMessage', error);
+    }
   };
 
   processRequest = async (userQuery: string, conversationId?: string) => {

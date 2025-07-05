@@ -10,6 +10,7 @@ import DOMPurify from 'dompurify';
 import { Input } from '@heroui/react';
 import { IoSend } from 'react-icons/io5';
 import { ExclamationTriangleIcon } from '@heroicons/react/16/solid';
+import { useAuth } from '@/hooks/useAuth';
 
 type Message = {
   id: string;
@@ -224,6 +225,7 @@ export default function ConversationPage() {
   const [messages, setMessages] = useState<Message[]>([]);
   const progressMessageIdRef = useRef<string | null>(null);
   const [inputValue, setInputValue] = useState<string>('');
+  const { accessToken } = useAuth();
 
   console.log('🎯 ConversationPage rendered with conversationId:', conversationId);
 
@@ -282,6 +284,73 @@ export default function ConversationPage() {
     },
   });
 
+  const sendMessage = async (message: string) => {
+    if (!message.trim() || !accessToken) return;
+
+    // Add user message to local state immediately
+    const newUserMessage: Message = {
+      id: `user-${Date.now()}`,
+      type: 'text',
+      content: message,
+      role: 'user',
+      timestamp: new Date(),
+    };
+
+    setMessages((prev) => [...prev, newUserMessage]);
+    setInputValue('');
+
+    try {
+      // Prepare conversation history for API
+      const conversationHistory = messages.map((msg) => ({
+        id: msg.id,
+        type: msg.type,
+        content: msg.content || '',
+        role: msg.role,
+        timestamp: msg.timestamp.toISOString(),
+      }));
+
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_BASE_URL_BACKEND}/api/transcribe/conversation`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${accessToken}`,
+          },
+          body: JSON.stringify({
+            conversationId,
+            newMessage: message,
+            conversationHistory,
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const result = await response.json();
+      console.log('Message sent successfully:', result);
+    } catch (error) {
+      console.error('Error sending message:', error);
+      // Remove the user message from state if there was an error
+      setMessages((prev) => prev.filter((msg) => msg.id !== newUserMessage.id));
+    }
+  };
+
+  const handleSendClick = () => {
+    if (inputValue.trim()) {
+      sendMessage(inputValue);
+    }
+  };
+
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSendClick();
+    }
+  };
+
   useEffect(() => {
     console.log('🔄 Conversation page effect - Connected:', isConnected, 'Room:', currentRoom);
   }, [isConnected, currentRoom]);
@@ -333,16 +402,12 @@ export default function ConversationPage() {
           <Input
             value={inputValue}
             onValueChange={(e: string) => setInputValue(e)}
+            onKeyDown={handleKeyPress}
             placeholder="Type your message..."
             size="lg"
             variant="bordered"
             endContent={
-              <div
-                className="cursor-pointer"
-                onClick={() => {
-                  console.log('send');
-                }}
-              >
+              <div className="cursor-pointer" onClick={handleSendClick}>
                 <IoSend size={20} />
               </div>
             }
