@@ -1,4 +1,5 @@
 import { supabase } from '@/config/supabase';
+import { UUID } from 'crypto';
 
 export class ConversationsService {
   async userConversations(userId: number) {
@@ -41,5 +42,25 @@ export class ConversationsService {
     });
 
     return { id: conversation_id, error: msgError };
+  }
+
+  async conversationMessages(conversationUUID: UUID) {
+    const { data: conversation, error: convError } = await supabase
+      .from('conversation')
+      .select('*')
+      .eq('uuid', conversationUUID)
+      .single();
+
+    if (convError || !conversation) {
+      return { data: undefined, error: convError ?? new Error('Conversation not found') };
+    }
+
+    const { data: messages, error } = await supabase
+      .from('conversation_message')
+      .select('*')
+      .eq('conversation_id', conversation.id)
+      .order('created_at', { ascending: true });
+
+    return { data: messages, error };
   }
 }

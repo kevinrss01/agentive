@@ -1,20 +1,20 @@
 'use client';
 
-import { MicrophoneIcon } from '@heroicons/react/16/solid';
-import { useState, useEffect, useRef } from 'react';
-import { useParams } from 'next/navigation';
-import { useAgentWebSocket } from '@/hooks/useAgentWebSocket';
+import { useConversation } from '@/hooks/useConversation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/utils/cn';
 import DOMPurify from 'dompurify';
 import { Input } from '@heroui/react';
 import { IoSend } from 'react-icons/io5';
 import { ExclamationTriangleIcon } from '@heroicons/react/16/solid';
+import { MicrophoneIcon } from '@heroicons/react/24/outline';
+import { useState, useRef, useEffect } from 'react';
+import { useParams } from 'next/navigation';
 
 type Message = {
-  id: string;
-  type: 'text' | 'audio';
-  content?: string;
+  id: string | number;
+  type?: 'text' | 'audio';
+  content: string;
   role: 'assistant' | 'user';
   timestamp: Date;
   isProgress?: boolean;
@@ -221,86 +221,17 @@ const ChatInterface = ({ messages }: { messages: Message[] }) => {
 export default function ConversationPage() {
   const params = useParams();
   const conversationId = params.conversationId as string;
-  const [messages, setMessages] = useState<Message[]>([]);
-  const progressMessageIdRef = useRef<string | null>(null);
-  const [inputValue, setInputValue] = useState<string>('');
+  const [inputValue, setInputValue] = useState('');
 
-  console.log('🎯 ConversationPage rendered with conversationId:', conversationId);
+  const { messages, isLoading, error, isConnected } = useConversation(conversationId);
 
-  const { isConnected, currentRoom } = useAgentWebSocket({
-    conversationId,
-    onProgress: (progressMessage) => {
-      console.log('📨 Progress message received in page:', progressMessage);
-      // Update or add progress message
-      const progressId = progressMessageIdRef.current || `progress-${Date.now()}`;
-      progressMessageIdRef.current = progressId;
+  const handleSendMessage = () => {
+    if (!inputValue.trim()) return;
 
-      setMessages((prev) => {
-        const existingIndex = prev.findIndex((msg) => msg.id === progressId);
-        const newMessage: Message = {
-          id: progressId,
-          type: 'text',
-          content: progressMessage.message,
-          role: 'assistant',
-          timestamp: new Date(progressMessage.timestamp),
-          isProgress: true,
-        };
-
-        if (existingIndex !== -1) {
-          const updated = [...prev];
-          updated[existingIndex] = newMessage;
-          return updated;
-        }
-        return [...prev, newMessage];
-      });
-    },
-    onFinalResponse: (finalMessage) => {
-      console.log('📨 Final message received in page:', finalMessage);
-      setMessages((prev) => {
-        const filtered = prev.filter((msg) => msg.id !== progressMessageIdRef.current);
-        return [
-          ...filtered,
-          {
-            id: `final-${Date.now()}`,
-            type: 'text',
-            content: finalMessage.message,
-            role: 'assistant',
-            timestamp: new Date(finalMessage.timestamp),
-            isAskingForMoreInformation: finalMessage.isAskingForMoreInformation,
-          },
-        ];
-      });
-      progressMessageIdRef.current = null;
-    },
-    onError: (error) => {
-      console.error('❌ WebSocket error in page:', error);
-      // Remove progress message if there's an error
-      if (progressMessageIdRef.current) {
-        setMessages((prev) => prev.filter((msg) => msg.id !== progressMessageIdRef.current));
-        progressMessageIdRef.current = null;
-      }
-    },
-  });
-
-  useEffect(() => {
-    console.log('🔄 Conversation page effect - Connected:', isConnected, 'Room:', currentRoom);
-  }, [isConnected, currentRoom]);
-
-  useEffect(() => {
-    const storedMessage = sessionStorage.getItem(`initial-message-${conversationId}`);
-    console.log('💾 Stored initial message:', storedMessage);
-    if (storedMessage) {
-      const initialMessage: Message = {
-        id: '1',
-        type: 'text',
-        content: storedMessage,
-        role: 'user',
-        timestamp: new Date(),
-      };
-      setMessages([initialMessage]);
-      sessionStorage.removeItem(`initial-message-${conversationId}`);
-    }
-  }, [conversationId]);
+    // TODO: Implement message sending logic here
+    console.log('Sending message:', inputValue);
+    setInputValue('');
+  };
 
   return (
     <div className="h-full flex flex-col bg-white">
@@ -325,24 +256,28 @@ export default function ConversationPage() {
         </div>
       </div>
 
-      <ChatInterface messages={messages} />
+      {isLoading ? (
+        <div className="flex-1 flex items-center justify-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+        </div>
+      ) : error ? (
+        <div className="flex-1 flex items-center justify-center">
+          <div className="text-red-500">Error while loading messages: {error.message}</div>
+        </div>
+      ) : (
+        <ChatInterface messages={messages} />
+      )}
 
-      {/* HeroUI Input at the bottom */}
       <div className="fixed bottom-0 left-0 right-0 bg-white border-t-2 border-gray-200 p-6 shadow-lg">
         <div className="max-w-4xl mx-auto">
           <Input
             value={inputValue}
-            onValueChange={(e: string) => setInputValue(e)}
+            onValueChange={setInputValue}
             placeholder="Type your message..."
             size="lg"
             variant="bordered"
             endContent={
-              <div
-                className="cursor-pointer"
-                onClick={() => {
-                  console.log('send');
-                }}
-              >
+              <div className="cursor-pointer" onClick={handleSendMessage}>
                 <IoSend size={20} />
               </div>
             }
