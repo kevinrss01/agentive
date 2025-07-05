@@ -215,12 +215,27 @@ export default function ConversationPage() {
   const [inputValue, setInputValue] = useState('');
   const { accessToken } = useAuth();
 
-  const { messages, isLoading, error, isConnected } = useConversation(conversationId);
+  const { messages, isLoading, error, isConnected, addMessage, isProcessing } =
+    useConversation(conversationId);
 
   const sendMessage = async (message: string) => {
-    if (!message.trim() || !accessToken) return;
+    if (!message.trim() || !accessToken || isProcessing) return;
+
+    // Add the user message to the local state immediately
+    addMessage({
+      type: 'text',
+      role: 'user',
+      content: message,
+    });
 
     try {
+      // Check if the last AI message is asking for more information
+      const lastAssistantMessage = messages
+        .filter((msg) => msg.role === 'assistant' && !msg.isProgress)
+        .slice(-1)[0];
+
+      const isAskingForMoreInfo = lastAssistantMessage?.isAskingForMoreInformation;
+
       // Prepare conversation history for API
       const conversationHistory = messages.map((msg) => ({
         id: String(msg.id),
@@ -230,21 +245,37 @@ export default function ConversationPage() {
         timestamp: msg.timestamp.toISOString(),
       }));
 
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_BASE_URL_BACKEND}/api/transcribe/conversation`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${accessToken}`,
-          },
-          body: JSON.stringify({
-            conversationId,
-            newMessage: message,
-            conversationHistory,
-          }),
-        }
-      );
+      // Choose the appropriate route based on whether AI is asking for more info
+      const endpoint = isAskingForMoreInfo
+        ? `${process.env.NEXT_PUBLIC_BASE_URL_BACKEND}/api/transcribe`
+        : `${process.env.NEXT_PUBLIC_BASE_URL_BACKEND}/api/transcribe/conversation`;
+
+      let body;
+      if (isAskingForMoreInfo) {
+        // Combine the first user message with the new message
+        const firstUserMessage = messages.find((msg) => msg.role === 'user')?.content || '';
+        const combinedMessage = `${firstUserMessage}\n\nAdditional information: ${message}`;
+
+        body = {
+          data: combinedMessage,
+          uuid: conversationId,
+        };
+      } else {
+        body = {
+          conversationId,
+          newMessage: message,
+          conversationHistory,
+        };
+      }
+
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify(body),
+      });
 
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
@@ -258,7 +289,7 @@ export default function ConversationPage() {
   };
 
   const handleSendMessage = () => {
-    if (!inputValue.trim()) return;
+    if (!inputValue.trim() || isProcessing) return;
     sendMessage(inputValue);
     setInputValue('');
   };
@@ -311,11 +342,15 @@ export default function ConversationPage() {
             value={inputValue}
             onValueChange={setInputValue}
             onKeyDown={handleKeyPress}
-            placeholder="Type your message..."
+            placeholder={isProcessing ? 'AI is processing...' : 'Type your message...'}
             size="lg"
             variant="bordered"
+            isDisabled={isProcessing}
             endContent={
-              <div className="cursor-pointer" onClick={handleSendMessage}>
+              <div
+                className={`cursor-pointer ${isProcessing ? 'opacity-50 cursor-not-allowed' : ''}`}
+                onClick={handleSendMessage}
+              >
                 <IoSend size={20} />
               </div>
             }

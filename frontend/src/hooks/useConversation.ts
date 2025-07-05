@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import { useAgentWebSocket } from '@/hooks/useAgentWebSocket';
 import { useAuth } from '@/hooks/useAuth';
 import { displayToast } from '@/utils/sonnerToast';
@@ -14,17 +14,41 @@ export type ConversationMessage = {
 };
 
 export function useConversation(conversationId: string | undefined) {
-  const { accessToken } = useAuth();
+  const { accessToken, isLoading: authLoading } = useAuth();
 
   const [messages, setMessages] = useState<ConversationMessage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
+  const [isProcessing, setIsProcessing] = useState(false);
 
   const progressMessageIdRef = useRef<string>('progress');
+
+  // Add message to local state
+  const addMessage = useCallback((message: Omit<ConversationMessage, 'id' | 'timestamp'>) => {
+    const newMessage: ConversationMessage = {
+      id: `${message.role}-${Date.now()}-${Math.random()}`,
+      timestamp: new Date(),
+      ...message,
+    };
+
+    setMessages((prev) => [...prev, newMessage]);
+
+    // If it's a user message, set processing to true
+    if (message.role === 'user') {
+      setIsProcessing(true);
+    }
+
+    return newMessage;
+  }, []);
 
   /** Fetch existing messages on mount / when conversationId changes */
   useEffect(() => {
     if (!conversationId) return;
+
+    // Don't fetch if auth is still loading or if there's no access token
+    if (authLoading || !accessToken) {
+      return;
+    }
 
     const controller = new AbortController();
 
@@ -65,7 +89,6 @@ export function useConversation(conversationId: string | undefined) {
         }));
         setMessages(initial);
       } catch (err: any) {
-        displayToast.error('Failed to load messages');
         console.error(err.message);
         if (err.name !== 'AbortError') {
           setError(err);
@@ -78,7 +101,7 @@ export function useConversation(conversationId: string | undefined) {
     fetchMessages();
 
     return () => controller.abort();
-  }, [conversationId, accessToken]);
+  }, [conversationId, accessToken, authLoading]);
 
   /** Handle sessionStorage initial user message (draft) */
   useEffect(() => {
@@ -103,6 +126,7 @@ export function useConversation(conversationId: string | undefined) {
   const { isConnected } = useAgentWebSocket({
     conversationId,
     onProgress: (progress) => {
+      setIsProcessing(true);
       setMessages((prev) => {
         const newMsg: ConversationMessage = {
           id: progressMessageIdRef.current,
@@ -123,6 +147,7 @@ export function useConversation(conversationId: string | undefined) {
       });
     },
     onFinalResponse: (final) => {
+      setIsProcessing(false);
       setMessages((prev) => {
         const withoutProgress = prev.filter((m) => m.id !== progressMessageIdRef.current);
         return [
@@ -140,6 +165,7 @@ export function useConversation(conversationId: string | undefined) {
     },
     onError: (err) => {
       console.error('WebSocket error', err);
+      setIsProcessing(false);
       // remove progress if exists
       setMessages((prev) => prev.filter((m) => m.id !== progressMessageIdRef.current));
     },
@@ -148,5 +174,5 @@ export function useConversation(conversationId: string | undefined) {
   // Sort messages once before returning
   const sortedMessages = messages.sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
 
-  return { messages: sortedMessages, isLoading, error, isConnected };
+  return { messages: sortedMessages, isLoading, error, isConnected, addMessage, isProcessing };
 }
