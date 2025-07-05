@@ -181,4 +181,5 @@ export const instructions = {
       - Vacation activities and attractions
       Is there anything travel-related I can help you with today?"
     `,
+  knowledgeInsertInstructions: ``,
 };
