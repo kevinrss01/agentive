@@ -12,8 +12,6 @@ export class KnowledgeService {
   private llamaService = new LlamaService();
 
   async evaluateMessage(message: string): Promise<KnowledgeResult> {
-    console.log('LE MESSAGE A ÉVALUER', message);
-
     const llamaResponse = await this.llamaService.promptLlama({
       instructions: instructions.knowledgeInsertInstructions,
       prompt: message,
@@ -31,7 +29,7 @@ export class KnowledgeService {
     knowledge: { isRelevant: boolean; content: string; confidence_score: number },
     userId: number | undefined
   ) {
-    if (!knowledge.isRelevant || userId) return;
+    if (!knowledge.isRelevant || !userId) return;
 
     await supabase.from('knowledge').insert([
       {

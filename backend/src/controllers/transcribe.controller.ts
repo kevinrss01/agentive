@@ -4,6 +4,7 @@ import { JWTAuthenticatedRequest } from '@/middlewares/auth.middleware';
 import { z } from 'zod';
 import crypto from 'crypto';
 import { ConversationsService } from '@/services/conversations.service';
+import { KnowledgeService } from '@/services/knowledge.service';
 
 const textValidator = z.object({
   data: z.string().min(1, 'The text data must not be empty').trim(),
@@ -36,6 +37,7 @@ export type AudioFile = {
 export class TranscribeController {
   private assistantOrchestratorService = new AssistantOrchestratorService();
   private conversationsService = new ConversationsService();
+  private knowledgeService = new KnowledgeService();
 
   private extractInput(req: Request) {
     const input: { text?: string; audioFile?: AudioFile; uuid?: string } = {};
@@ -83,7 +85,8 @@ export class TranscribeController {
       // Add a delay before processing to allow frontend to connect
       setTimeout(() => {
         this.assistantOrchestratorService
-          .processRequest(userQuery, req.body.message as string, uuid)
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+          .processRequest(userQuery, uuid, req.body.message as string, req.user)
           .catch((error) => {
             console.error('Error processing request:', error);
           });
@@ -97,6 +100,12 @@ export class TranscribeController {
           content: userQuery,
           uuid,
         });
+
+        const knowledgeResult = await this.knowledgeService.evaluateMessage(userQuery);
+
+        if (knowledgeResult.isRelevant) {
+          await this.knowledgeService.knowledgeInsert(knowledgeResult, req.user.id);
+        }
       }
 
       res.json({

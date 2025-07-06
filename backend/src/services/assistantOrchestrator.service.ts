@@ -67,13 +67,6 @@ export class AssistantOrchestratorService {
           'user'
         );
 
-        // check if message is a knowledge important
-        // const knowledgeResult = await this.knowledgeService.evaluateMessage(newMessage);
-
-        // if (knowledgeResult.isRelevant && user) {
-        //   await this.knowledgeService.knowledgeInsert(knowledgeResult, user.id);
-        // }
-
         console.log(`📤 Sending progress to room ${conversationId}: 'Processing your request...'`);
         this.socketIOService.sendProgress(conversationId, 'Processing your request...');
       }
@@ -153,14 +146,24 @@ export class AssistantOrchestratorService {
     }
   };
 
-  processRequest = async (userQuery: string, message: string, conversationId: string) => {
+  processRequest = async (
+    userQuery: string,
+    conversationId: string,
+    message?: string,
+    user?: User
+  ) => {
     try {
       if (!userQuery) {
         throw new Error('No valid input provided. Please provide either text or an audio file.');
       }
 
-      // Sauvegarder le message de l'utilisateur
-      if (conversationId) {
+      if (conversationId && message) {
+        const knowledgeResult = await this.knowledgeService.evaluateMessage(message);
+
+        if (knowledgeResult.isRelevant && user) {
+          await this.knowledgeService.knowledgeInsert(knowledgeResult, user.id);
+        }
+
         await this.conversationsService.conversationInsert(message, conversationId as UUID, 'user');
 
         console.log(`📤 Sending progress to room ${conversationId}: 'Processing your request...'`);
