@@ -68,6 +68,7 @@ export class TranscribeController {
       }
 
       const input = this.extractInput(req);
+
       if (!input.text && !input.audioFile) {
         res
           .status(400)
@@ -81,9 +82,11 @@ export class TranscribeController {
 
       // Add a delay before processing to allow frontend to connect
       setTimeout(() => {
-        this.assistantOrchestratorService.processRequest(userQuery, uuid).catch((error) => {
-          console.error('Error processing request:', error);
-        });
+        this.assistantOrchestratorService
+          .processRequest(userQuery, req.body.message as string, uuid)
+          .catch((error) => {
+            console.error('Error processing request:', error);
+          });
       }, 3000);
 
       // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access

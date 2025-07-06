@@ -253,13 +253,15 @@ export default function ConversationPage() {
 
       let body;
       if (isAskingForMoreInfo) {
-        // Combine the first user message with the new message
-        const firstUserMessage = messages.find((msg) => msg.role === 'user')?.content || '';
-        const combinedMessage = `${firstUserMessage}\n\nAdditional information: ${message}`;
+        const allUserMessages = [
+          ...messages.filter((msg) => msg.role === 'user').map((msg) => msg.content || ''),
+          message,
+        ].join('\n\n');
 
         body = {
-          data: combinedMessage,
+          data: allUserMessages,
           uuid: conversationId,
+          message: message,
         };
       } else {
         body = {

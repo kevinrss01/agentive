@@ -33,6 +33,21 @@ export class ConversationsService {
       return { id: undefined, error: convError ?? new Error('Conversation insertion failed') };
     }
 
+    const { data: messageData, error: messageError } = await supabase
+      .from('conversation_message')
+      .insert({
+        content: params.content,
+        conversation_id: convData.id,
+        created_at: new Date().toISOString(),
+        role: 'user',
+      })
+      .select('id')
+      .single();
+
+    if (messageError || !messageData) {
+      return { id: undefined, error: messageError ?? new Error('Message insertion failed') };
+    }
+
     return { id: convData.id, error: undefined };
   }
 

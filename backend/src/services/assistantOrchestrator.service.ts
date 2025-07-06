@@ -34,11 +34,9 @@ export class AssistantOrchestratorService {
       prompt,
     });
 
-    const cleanedResponse = this.cleanAssistantResponse(llamaResponse);
-
     if (conversationId) {
       await this.conversationsService.conversationInsert(
-        cleanedResponse,
+        llamaResponse,
         conversationId as UUID,
         'assistant'
       );
@@ -46,7 +44,7 @@ export class AssistantOrchestratorService {
 
     return {
       isCorrect: llamaResponse.toLowerCase().includes('true'),
-      response: cleanedResponse,
+      response: llamaResponse,
     };
   };
 
@@ -70,11 +68,11 @@ export class AssistantOrchestratorService {
         );
 
         // check if message is a knowledge important
-        const knowledgeResult = await this.knowledgeService.evaluateMessage(newMessage);
+        // const knowledgeResult = await this.knowledgeService.evaluateMessage(newMessage);
 
-        if (knowledgeResult.isRelevant && user) {
-          await this.knowledgeService.knowledgeInsert(knowledgeResult, user.id);
-        }
+        // if (knowledgeResult.isRelevant && user) {
+        //   await this.knowledgeService.knowledgeInsert(knowledgeResult, user.id);
+        // }
 
         console.log(`📤 Sending progress to room ${conversationId}: 'Processing your request...'`);
         this.socketIOService.sendProgress(conversationId, 'Processing your request...');
@@ -135,11 +133,9 @@ export class AssistantOrchestratorService {
         prompt: promptToTransformAgentResponseToReadable,
       });
 
-      const cleanedReadableResponse = this.cleanAssistantResponse(readableResponse);
-
       if (conversationId) {
         await this.conversationsService.conversationInsert(
-          cleanedReadableResponse,
+          readableResponse,
           conversationId as UUID,
           'assistant'
         );
@@ -148,7 +144,7 @@ export class AssistantOrchestratorService {
       if (conversationId) {
         this.socketIOService.sendFinalResponse({
           conversationId,
-          message: cleanedReadableResponse,
+          message: readableResponse,
           isAskingForMoreInformation: false,
         });
       }
@@ -157,23 +153,15 @@ export class AssistantOrchestratorService {
     }
   };
 
-  processRequest = async (userQuery: string, conversationId: string) => {
+  processRequest = async (userQuery: string, message: string, conversationId: string) => {
     try {
       if (!userQuery) {
         throw new Error('No valid input provided. Please provide either text or an audio file.');
       }
 
-      console.debug('transcription', userQuery);
-
       // Sauvegarder le message de l'utilisateur
       if (conversationId) {
-        const cleanedUserQuery = this.cleanAssistantResponse(userQuery);
-
-        await this.conversationsService.conversationInsert(
-          cleanedUserQuery,
-          conversationId as UUID,
-          'user'
-        );
+        await this.conversationsService.conversationInsert(message, conversationId as UUID, 'user');
 
         console.log(`📤 Sending progress to room ${conversationId}: 'Processing your request...'`);
         this.socketIOService.sendProgress(conversationId, 'Processing your request...');
@@ -233,18 +221,16 @@ export class AssistantOrchestratorService {
         prompt: promptToTransformAgentResponseToReadable,
       });
 
-      const cleanedReadableResponse = this.cleanAssistantResponse(readableResponse);
-
       if (conversationId) {
         console.log(`📤 Sending final response to room ${conversationId}`);
         this.socketIOService.sendFinalResponse({
           conversationId,
-          message: cleanedReadableResponse,
+          message: readableResponse,
           isAskingForMoreInformation: false,
         });
       }
 
-      return cleanedReadableResponse;
+      return readableResponse;
     } catch (error: unknown) {
       console.error('Error in processRequest', error);
 
@@ -258,12 +244,4 @@ export class AssistantOrchestratorService {
       return;
     }
   };
-
-  private cleanAssistantResponse(response: string): string {
-    const additionalInfoIndex = response.indexOf('Additional information:');
-    if (additionalInfoIndex !== -1) {
-      return response.split('Additional information:')[1].trim();
-    }
-    return response;
-  }
 }
