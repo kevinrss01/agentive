@@ -33,15 +33,7 @@ export class ConversationsService {
       return { id: undefined, error: convError ?? new Error('Conversation insertion failed') };
     }
 
-    const conversation_id = convData.id;
-
-    const { error: msgError } = await supabase.from('conversation_message').insert({
-      content: params.content,
-      conversation_id,
-      created_at: new Date().toISOString(),
-    });
-
-    return { id: conversation_id, error: msgError };
+    return { id: convData.id, error: undefined };
   }
 
   async conversationMessages(conversationUUID: UUID) {
@@ -62,5 +54,24 @@ export class ConversationsService {
       .order('created_at', { ascending: true });
 
     return { data: messages, error };
+  }
+
+  async conversationInsert(content: string, conversationUUID: UUID, role: string) {
+    const { data: conversation, error: convError } = await supabase
+      .from('conversation')
+      .select('*')
+      .eq('uuid', conversationUUID)
+      .single();
+
+    if (convError || !conversation) {
+      throw new Error('Conversation not found');
+    }
+
+    await supabase.from('conversation_message').insert({
+      content,
+      conversation_id: conversation.id,
+      created_at: new Date().toISOString(),
+      role,
+    });
   }
 }

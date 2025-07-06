@@ -52,63 +52,9 @@ export function useConversation(conversationId: string | undefined) {
 
     const controller = new AbortController();
 
-    async function fetchMessages() {
-      try {
-        setIsLoading(true);
-        setError(null);
-
-        console.log('🔐 Frontend Debug: accessToken length:', accessToken?.length);
-        console.log(
-          '🔐 Frontend Debug: accessToken starts with:',
-          accessToken?.substring(0, 20) + '...'
-        );
-
-        const res = await fetch(
-          `${process.env.NEXT_PUBLIC_BASE_URL_BACKEND}/api/conversations/${conversationId}`,
-          {
-            headers: {
-              Authorization: `Bearer ${accessToken}`,
-              'Content-Type': 'application/json',
-            },
-            signal: controller.signal,
-          }
-        );
-        if (!res.ok) {
-          const errorText = await res.text();
-          console.error('❌ Frontend Debug: API Error Response:', errorText);
-          throw new Error('Failed to load messages');
-        }
-        const json = await res.json();
-        // Assume json.data already matches the expected shape except timestamp
-        const initial: ConversationMessage[] = json.data.map((m: any) => ({
-          id: m.id,
-          type: m.type || 'text',
-          role: m.role,
-          content: m.content,
-          timestamp: new Date(m.created_at),
-        }));
-        setMessages(initial);
-      } catch (err: any) {
-        console.error(err.message);
-        if (err.name !== 'AbortError') {
-          setError(err);
-        }
-      } finally {
-        setIsLoading(false);
-      }
-    }
-
-    fetchMessages();
-
-    return () => controller.abort();
-  }, [conversationId, accessToken, authLoading]);
-
-  /** Handle sessionStorage initial user message (draft) */
-  useEffect(() => {
-    if (!conversationId) return;
     const stored = sessionStorage.getItem(`initial-message-${conversationId}`);
     if (stored) {
-      setMessages((prev) => [
+      setMessages([
         {
           id: 'initial-local',
           type: 'text',
@@ -116,11 +62,57 @@ export function useConversation(conversationId: string | undefined) {
           content: stored,
           timestamp: new Date(),
         },
-        ...prev,
       ]);
       sessionStorage.removeItem(`initial-message-${conversationId}`);
+    } else {
+      const controller = new AbortController();
+
+      async function fetchMessages() {
+        try {
+          setIsLoading(true);
+          setError(null);
+
+          const res = await fetch(
+            `${process.env.NEXT_PUBLIC_BASE_URL_BACKEND}/api/conversations/${conversationId}`,
+            {
+              headers: {
+                Authorization: `Bearer ${accessToken}`,
+                'Content-Type': 'application/json',
+              },
+              signal: controller.signal,
+            }
+          );
+
+          if (!res.ok) {
+            const errorText = await res.text();
+            console.error('❌ Frontend Debug: API Error Response:', errorText);
+            throw new Error('Failed to load messages');
+          }
+
+          const json = await res.json();
+          const initial: ConversationMessage[] = json.data.map((m: any) => ({
+            id: m.id,
+            type: m.type || 'text',
+            role: m.role,
+            content: m.content,
+            timestamp: new Date(m.created_at),
+          }));
+          setMessages(initial);
+        } catch (err: any) {
+          console.error(err.message);
+          if (err.name !== 'AbortError') {
+            setError(err);
+          }
+        } finally {
+          setIsLoading(false);
+        }
+      }
+
+      fetchMessages();
+
+      return () => controller.abort();
     }
-  }, [conversationId]);
+  }, [conversationId, accessToken, authLoading]);
 
   /** WebSocket integration for progress & final messages */
   const { isConnected } = useAgentWebSocket({
