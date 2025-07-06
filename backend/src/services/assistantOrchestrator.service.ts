@@ -31,9 +31,11 @@ export class AssistantOrchestratorService {
       prompt,
     });
 
+    const cleanedResponse = this.cleanAssistantResponse(llamaResponse);
+
     if (conversationId) {
       await this.conversationsService.conversationInsert(
-        llamaResponse,
+        cleanedResponse,
         conversationId as UUID,
         'assistant'
       );
@@ -41,7 +43,7 @@ export class AssistantOrchestratorService {
 
     return {
       isCorrect: llamaResponse.toLowerCase().includes('true'),
-      response: llamaResponse,
+      response: cleanedResponse,
     };
   };
 
@@ -121,9 +123,11 @@ export class AssistantOrchestratorService {
         prompt: promptToTransformAgentResponseToReadable,
       });
 
+      const cleanedReadableResponse = this.cleanAssistantResponse(readableResponse);
+
       if (conversationId) {
         await this.conversationsService.conversationInsert(
-          readableResponse,
+          cleanedReadableResponse,
           conversationId as UUID,
           'assistant'
         );
@@ -132,7 +136,7 @@ export class AssistantOrchestratorService {
       if (conversationId) {
         this.socketIOService.sendFinalResponse({
           conversationId,
-          message: readableResponse,
+          message: cleanedReadableResponse,
           isAskingForMoreInformation: false,
         });
       }
@@ -151,8 +155,10 @@ export class AssistantOrchestratorService {
 
       // Sauvegarder le message de l'utilisateur
       if (conversationId) {
+        const cleanedUserQuery = this.cleanAssistantResponse(userQuery);
+
         await this.conversationsService.conversationInsert(
-          userQuery,
+          cleanedUserQuery,
           conversationId as UUID,
           'user'
         );
@@ -215,16 +221,18 @@ export class AssistantOrchestratorService {
         prompt: promptToTransformAgentResponseToReadable,
       });
 
+      const cleanedReadableResponse = this.cleanAssistantResponse(readableResponse);
+
       if (conversationId) {
         console.log(`📤 Sending final response to room ${conversationId}`);
         this.socketIOService.sendFinalResponse({
           conversationId,
-          message: readableResponse,
+          message: cleanedReadableResponse,
           isAskingForMoreInformation: false,
         });
       }
 
-      return readableResponse;
+      return cleanedReadableResponse;
     } catch (error: unknown) {
       console.error('Error in processRequest', error);
 
@@ -238,4 +246,12 @@ export class AssistantOrchestratorService {
       return;
     }
   };
+
+  private cleanAssistantResponse(response: string): string {
+    const additionalInfoIndex = response.indexOf('Additional information:');
+    if (additionalInfoIndex !== -1) {
+      return response.split('Additional information:')[1].trim();
+    }
+    return response;
+  }
 }
