@@ -8,6 +8,8 @@ import { SocketIOService } from './socketio.service';
 import { Message } from '@/types/types';
 import { ConversationsService } from './conversations.service';
 import { UUID } from 'crypto';
+import { KnowledgeService } from './knowledge.service';
+import { User } from '@/types/db.types';
 
 export class AssistantOrchestratorService {
   private speechToTextService = new SpeechToTextService();
@@ -16,6 +18,7 @@ export class AssistantOrchestratorService {
   private promptsService = new PromptsService();
   private socketIOService = SocketIOService.getInstance();
   private conversationsService = new ConversationsService();
+  private knowledgeService = new KnowledgeService();
 
   getTextFromInput = (input: { text?: string; audioFile?: AudioFile }) => {
     if (input.audioFile) return this.speechToTextService.transcribeAudio(input.audioFile);
@@ -51,10 +54,12 @@ export class AssistantOrchestratorService {
     conversationHistory,
     newMessage,
     conversationId,
+    user,
   }: {
     conversationHistory: Message[];
     newMessage: string;
     conversationId?: string;
+    user?: User;
   }) => {
     try {
       if (conversationId) {
@@ -63,6 +68,13 @@ export class AssistantOrchestratorService {
           conversationId as UUID,
           'user'
         );
+
+        // check if message is a knowledge important
+        const knowledgeResult = await this.knowledgeService.evaluateMessage(newMessage);
+
+        if (knowledgeResult.isRelevant && user) {
+          await this.knowledgeService.knowledgeInsert(knowledgeResult, user.id);
+        }
 
         console.log(`📤 Sending progress to room ${conversationId}: 'Processing your request...'`);
         this.socketIOService.sendProgress(conversationId, 'Processing your request...');

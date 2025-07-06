@@ -141,6 +141,7 @@ export class TranscribeController {
             })),
             newMessage,
             conversationId,
+            user: req.user,
           })
           .catch((error) => {
             console.error('Error processing conversation request:', error);

@@ -246,6 +246,7 @@ export default function ConversationPage() {
       }));
 
       // Choose the appropriate route based on whether AI is asking for more info
+
       const endpoint = isAskingForMoreInfo
         ? `${process.env.NEXT_PUBLIC_BASE_URL_BACKEND}/api/transcribe`
         : `${process.env.NEXT_PUBLIC_BASE_URL_BACKEND}/api/transcribe/conversation`;
