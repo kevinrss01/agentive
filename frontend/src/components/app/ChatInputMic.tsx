@@ -7,6 +7,13 @@ import { wait } from '@/utils/utils';
 import { FaSquare } from 'react-icons/fa';
 import { useAuth } from '@/hooks/useAuth';
 
+// Travel destination suggestions bubbles
+const travelSuggestions = [
+  { id: 1, text: 'Paris, France', query: 'Plan a trip to Paris, France' },
+  { id: 2, text: 'Tokyo, Japan', query: 'Plan a trip to Tokyo, Japan' },
+  { id: 3, text: 'New York, USA', query: 'Plan a trip to New York, USA' },
+];
+
 const ChatInputMic = ({
   placeholders,
   setIsRequestSuccess,
@@ -29,20 +36,15 @@ const ChatInputMic = ({
     setData(e.target.value);
   }, []);
 
-  const onSubmit = React.useCallback(
-    async (e: React.FormEvent<HTMLFormElement>) => {
-      e.preventDefault();
-      if (!data.trim()) return;
-
+  const sendMessage = React.useCallback(
+    async (message: string) => {
       if (!accessToken) {
         displayToast.error('Please log in to send messages.');
         return;
       }
 
       await wait(1000);
-
       setTranscription(true);
-      const userMessage = data.trim();
 
       try {
         const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL_BACKEND}/api/transcribe`, {
@@ -51,7 +53,7 @@ const ChatInputMic = ({
             'Content-Type': 'application/json',
             Authorization: `Bearer ${accessToken}`,
           },
-          body: JSON.stringify({ data: userMessage, conversationNew: true }),
+          body: JSON.stringify({ data: message, conversationNew: true }),
         });
 
         if (!res.ok) {
@@ -61,7 +63,7 @@ const ChatInputMic = ({
         const result = await res.json();
 
         if (result.conversationId) {
-          sessionStorage.setItem(`initial-message-${result.conversationId}`, userMessage);
+          sessionStorage.setItem(`initial-message-${result.conversationId}`, message);
           setConversationId?.(result.conversationId);
           setIsRequestSuccess(true);
         }
@@ -77,7 +79,23 @@ const ChatInputMic = ({
         setTranscription(false);
       }
     },
-    [data, setIsRequestSuccess, setConversationId, accessToken]
+    [setIsRequestSuccess, setConversationId, accessToken]
+  );
+
+  const onSubmit = React.useCallback(
+    async (e: React.FormEvent<HTMLFormElement>) => {
+      e.preventDefault();
+      if (!data.trim()) return;
+      await sendMessage(data.trim());
+    },
+    [data, sendMessage]
+  );
+
+  const handleSuggestionClick = React.useCallback(
+    async (suggestion: typeof travelSuggestions[0]) => {
+      await sendMessage(suggestion.query);
+    },
+    [sendMessage]
   );
 
   const startRecording = async () => {
@@ -176,34 +194,54 @@ const ChatInputMic = ({
   }, []);
 
   return (
-    <>
-      <PlaceholdersAndVanishInput
-        placeholders={placeholders}
-        onChange={handleChange}
-        onSubmitAction={onSubmit}
-        isRecording={recording}
-      />
-      <Button
-        disabled={transcription}
-        onPress={handleRecording}
-        isIconOnly
-        className={`w-[45px] h-[45px] min-w-[45px] rounded-3xl relative right-[65px] ${
-          recording
-            ? 'bg-red-500 hover:bg-red-600'
-            : transcription
-              ? 'bg-gray-400 cursor-not-allowed'
-              : 'bg-black hover:bg-gray-800'
-        }`}
-      >
-        {recording ? (
-          <FaSquare color="white" size={16} />
-        ) : transcription ? (
-          <Spinner />
-        ) : (
-          <FaMicrophone color="white" size={16} />
-        )}
-      </Button>
-    </>
+    <div className="w-full">
+      <div className="relative flex items-center">
+        <PlaceholdersAndVanishInput
+          placeholders={placeholders}
+          onChange={handleChange}
+          onSubmitAction={onSubmit}
+          isRecording={recording}
+        />
+        <Button
+          disabled={transcription}
+          onPress={handleRecording}
+          isIconOnly
+          className={`w-[45px] h-[45px] min-w-[45px] rounded-3xl relative right-[65px] ${
+            recording
+              ? 'bg-red-500 hover:bg-red-600'
+              : transcription
+                ? 'bg-gray-400 cursor-not-allowed'
+                : 'bg-black hover:bg-gray-800'
+          }`}
+        >
+          {recording ? (
+            <FaSquare color="white" size={16} />
+          ) : transcription ? (
+            <Spinner />
+          ) : (
+            <FaMicrophone color="white" size={16} />
+          )}
+        </Button>
+      </div>
+      
+      {/* Travel suggestion bubbles */}
+      <div className="flex gap-2 mt-3 flex-wrap ml-[85px]">
+        {travelSuggestions.map((suggestion) => (
+          <button
+            key={suggestion.id}
+            onClick={() => handleSuggestionClick(suggestion)}
+            disabled={transcription}
+            className={`px-4 py-2 rounded-full text-sm font-normal transition-all duration-200 ${
+              transcription
+                ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                : 'bg-blue-50 text-blue-700 hover:bg-blue-100 hover:scale-[1.02] cursor-pointer'
+            }`}
+          >
+            {suggestion.text}
+          </button>
+        ))}
+      </div>
+    </div>
   );
 };
 
