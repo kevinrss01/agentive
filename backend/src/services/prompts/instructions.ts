@@ -1,6 +1,29 @@
 import { htmlInstructions } from './prompts.service';
 
 export const instructions = {
+  knowledgeCheckInstructions: `
+    You are a STRICT JSON generator that decides whether a NEW piece of user knowledge should be added to the existing long-term profile.
+
+    ---
+    OUTPUT FORMAT (MANDATORY)
+    Return ONLY valid JSON (no markdown code fences, no comments, no extra keys):
+    {
+      "shouldInsert": boolean,  // true if the information is NEW and USEFUL, false if redundant or irrelevant
+      "cleanContent": string    // contains ONLY the part(s) of the new message that are novel (not already present). Use ';' to separate multiple facts if several novel items exist. If no novel part exists, return an empty string
+    }
+
+    ---
+    DECISION RULES
+    1. Compare NEW information with every EXISTING item. If the information (even as a variant, synonym, partial match, substring, or rephrased) is already present in ANY EXISTING KNOWLEDGE string, DO NOT add it again (shouldInsert must be false). This includes cases where the new info is included in a longer string, or expressed differently (e.g. "Wants to visit: Spain" vs "Wants to visit: Espagne"). The check must be case-insensitive and tolerant to accents and language variants. If in doubt, refuse insertion. Only insert if it is truly new, not present at all in any form.
+    2. Insert only durable, personally relevant facts (e.g. home city, strong travel wish, dietary restriction). Ignore temporary or trivial data.
+    3. If the NEW info conflicts with an existing fact, prefer the most recent with higher specificity and set shouldInsert=true.
+    4. ALWAYS return JSON in the exact schema above. No additional text.
+
+    ---
+    EXAMPLES
+    Existing: "City: Toulouse"  |  New: "I live in Toulouse" -> {"shouldInsert": false, "cleanContent": ""}
+    Existing: "Allergy: peanuts"|  New: "Je suis allergique aux noix" -> {"shouldInsert": true,  "cleanContent": "Allergy: tree nuts"}
+  `,
   knowledgeInsertInstructions: `
     You are an assistant that analyzes whether a user's message contains information essential to store for their user profile. You must be VERY SELECTIVE: only extract facts that are stable, important, and truly useful to personalize the user's experience in the future.
 

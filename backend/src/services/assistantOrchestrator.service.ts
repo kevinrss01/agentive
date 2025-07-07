@@ -20,14 +20,24 @@ export class AssistantOrchestratorService {
   private conversationsService = new ConversationsService();
   private knowledgeService = new KnowledgeService();
 
+  private async prependKnowledgeContext(prompt: string, userId?: number) {
+    const knowledgeContext = await this.knowledgeService.getUserKnowledgeContext(userId);
+
+    if (!knowledgeContext) return prompt;
+
+    return `### USER KNOWLEDGE CONTEXT ###\n"""\n${knowledgeContext}\n"""\n\n${prompt}`;
+  }
+
   getTextFromInput = (input: { text?: string; audioFile?: AudioFile }) => {
     if (input.audioFile) return this.speechToTextService.transcribeAudio(input.audioFile);
     if (input.text) return input.text;
     throw new Error('No valid input provided. Please provide either text or an audio file.');
   };
 
-  verifyQueryBeforeSendingToAgent = async (userQuery: string) => {
-    const prompt = this.promptsService.getPromptToVerifyQueryBeforeSendingToAgent(userQuery);
+  verifyQueryBeforeSendingToAgent = async (userQuery: string, userId?: number) => {
+    let prompt = this.promptsService.getPromptToVerifyQueryBeforeSendingToAgent(userQuery);
+
+    prompt = await this.prependKnowledgeContext(prompt, userId);
 
     const llamaInstructions = instructions.llamaBaseInstructions;
     const llamaResponse = await this.llamaService.promptLlama({
@@ -45,10 +55,12 @@ export class AssistantOrchestratorService {
     conversationHistory,
     newMessage,
     conversationId,
+    user,
   }: {
     conversationHistory: Message[];
     newMessage: string;
     conversationId?: string;
+    user?: User;
   }) => {
     try {
       if (conversationId) {
@@ -62,10 +74,14 @@ export class AssistantOrchestratorService {
         this.socketIOService.sendProgress(conversationId, 'Processing your request...');
       }
 
-      const prompt = this.promptsService.getPromptToTransformNewMessageToAgentPrompt(
+      let prompt = this.promptsService.getPromptToTransformNewMessageToAgentPrompt(
         conversationHistory,
         newMessage
       );
+
+      // Prepend knowledge context if available
+      prompt = await this.prependKnowledgeContext(prompt, user?.id);
+      console.log('prompt avec les infos2', prompt);
 
       console.debug('initial prompt', prompt);
 
@@ -161,7 +177,7 @@ export class AssistantOrchestratorService {
         this.socketIOService.sendProgress(conversationId, 'Processing your request...');
       }
 
-      const isQueryCorrect = await this.verifyQueryBeforeSendingToAgent(userQuery);
+      const isQueryCorrect = await this.verifyQueryBeforeSendingToAgent(userQuery, user?.id);
 
       if (isQueryCorrect.response) {
         await this.conversationsService.conversationInsert(
