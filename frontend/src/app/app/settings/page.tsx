@@ -60,6 +60,8 @@ export default function SettingsPage() {
     }
   };
 
+  if (isLoading) return <></>;
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100 py-8 px-4">
       <div className="w-full max-w-lg bg-white/80 rounded-2xl p-8 md:p-12 flex flex-col items-center">
@@ -89,25 +91,23 @@ export default function SettingsPage() {
             className=""
           />
 
-          {!isLoading && (
-            <div className="flex flex-1">
-              <Select
-                label="Select a country"
-                value={country}
-                onChange={(e) =>
-                  setCountry(countries.find((c) => c.key === e.target.value)?.label || '')
-                }
-                defaultSelectedKeys={
-                  country ? [countries.find((cty) => cty.label === country)?.key as string] : []
-                }
-                className="w-full"
-              >
-                {countries.map((country) => (
-                  <SelectItem key={country.key}>{country.label}</SelectItem>
-                ))}
-              </Select>
-            </div>
-          )}
+          <div className="flex flex-1">
+            <Select
+              label="Select a country"
+              value={country}
+              onChange={(e) =>
+                setCountry(countries.find((c) => c.key === e.target.value)?.label || '')
+              }
+              defaultSelectedKeys={
+                country ? [countries.find((cty) => cty.label === country)?.key as string] : []
+              }
+              className="w-full"
+            >
+              {countries.map((country) => (
+                <SelectItem key={country.key}>{country.label}</SelectItem>
+              ))}
+            </Select>
+          </div>
 
           <Button
             type="submit"
