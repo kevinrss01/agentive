@@ -18,7 +18,7 @@ export class AgentService {
       model: 'o4-mini',
       tools: [
         webSearchTool({
-          searchContextSize: 'low',
+          searchContextSize: 'medium',
         }),
       ],
       instructions: instructions.travelAgent,

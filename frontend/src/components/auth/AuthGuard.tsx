@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import { Spinner } from '@heroui/react';
 
@@ -13,8 +13,11 @@ const AuthGuard = ({ children }: AuthGuardProps) => {
   const { isAuthenticated, isLoading } = useAuth();
   const router = useRouter();
 
+  const pathname = usePathname();
+  const isLandingPage = pathname === '/';
+
   useEffect(() => {
-    if (!isLoading && !isAuthenticated) {
+    if (!isLoading && !isAuthenticated && !isLandingPage) {
       router.push('/login');
     }
   }, [isAuthenticated, isLoading, router]);

@@ -20,40 +20,45 @@ import { Heading, Subheading } from './text';
 const testimonials = [
   {
     img: '/testimonials/tina-yards.jpg',
-    name: 'Tina Yards',
-    title: 'VP of Sales, Protocol',
+    name: 'Sarah Chen',
+    title: 'Travel Enthusiast, San Francisco',
     quote:
-      "Thanks to Agentive, we're finding new leads that we never would have found with legal methods.",
+      'Agentive found me a hidden gem hotel in Tokyo and the perfect omakase restaurant nearby. Saved hours of research and got better results than any travel site.',
   },
   {
     img: '/testimonials/conor-neville.jpg',
-    name: 'Conor Neville',
-    title: 'Head of Customer Success, TaxPal',
-    quote: 'Agentive made undercutting all of our competitors an absolute breeze.',
+    name: 'Michael Torres',
+    title: 'Food Blogger, New York',
+    quote:
+      "From Michelin stars to hole-in-the-wall spots, Agentive always finds exactly what I'm craving. It even remembers I'm gluten-free.",
   },
   {
     img: '/testimonials/amy-chase.jpg',
-    name: 'Amy Chase',
-    title: 'Head of GTM, Pocket',
-    quote: 'We closed a deal in literally a few minutes because we knew their exact budget.',
+    name: 'Emma Watson',
+    title: 'Smart Shopper, London',
+    quote:
+      'Saved £3000 last year just on shopping. Agentive finds deals I never knew existed and tracks prices until they drop.',
   },
   {
     img: '/testimonials/veronica-winton.jpg',
-    name: 'Veronica Winton',
-    title: 'CSO, Planeteria',
-    quote: "We've managed to put two of our main competitors out of business in 6 months.",
+    name: 'Lisa Park',
+    title: 'Busy Mom, Seattle',
+    quote:
+      "One AI for everything - planning trips, finding kid-friendly restaurants, and shopping for the best deals. It\'s like having a personal assistant.",
   },
   {
     img: '/testimonials/dillon-lenora.jpg',
-    name: 'Dillon Lenora',
-    title: 'VP of Sales, Detax',
-    quote: 'I was able to replace 80% of my team with AgentiveAI bots.',
+    name: 'James Miller',
+    title: 'Business Professional, Austin',
+    quote:
+      'Books my flights, finds restaurants for client dinners, and even helps me shop for gifts. Agentive handles it all perfectly.',
   },
   {
     img: '/testimonials/harriet-arron.jpg',
-    name: 'Harriet Arron',
-    title: 'Account Manager, Commit',
-    quote: "I've smashed all my targets without having to speak to a lead in months.",
+    name: 'Rachel Kim',
+    title: 'Lifestyle Curator, Miami',
+    quote:
+      "The AI learns my style. Whether I\'m planning a trip, finding a new restaurant, or shopping for clothes - it knows exactly what I want.",
   },
 ];
 
@@ -152,14 +157,15 @@ function CallToAction() {
   return (
     <div>
       <p className="max-w-sm text-sm/6 text-gray-600">
-        Join the best sellers in the business and start using Agentive to hit your targets today.
+        Join thousands of happy travelers who've discovered the smarter way to plan their perfect
+        trips.
       </p>
       <div className="mt-2">
         <Link
           href="/app"
           className="inline-flex items-center gap-2 text-sm/6 font-medium text-pink-600"
         >
-          Get started
+          Start your journey
           <ArrowLongRightIcon className="size-5" />
         </Link>
       </div>
@@ -187,9 +193,9 @@ export function Testimonials() {
     <div className="overflow-hidden py-32">
       <Container>
         <div ref={setReferenceWindowRef}>
-          <Subheading>What everyone is saying</Subheading>
+          <Subheading>Testimonials</Subheading>
           <Heading as="h3" className="mt-2">
-            Trusted by professionals.
+            Loved by travelers worldwide.
           </Heading>
         </div>
       </Container>

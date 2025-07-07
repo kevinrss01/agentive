@@ -12,17 +12,18 @@ function CallToAction() {
       <hgroup>
         <Subheading>Get started</Subheading>
         <p className="mt-6 text-3xl font-medium tracking-tight text-gray-950 sm:text-5xl">
-          Ready to dive in?
+          Ready to simplify your life?
           <br />
-          Start your free trial today.
+          Let AI handle the research.
         </p>
       </hgroup>
       <p className="mx-auto mt-6 max-w-xs text-sm/6 text-gray-500">
-        Get the cheat codes for selling and unlock your team&apos;s revenue potential.
+        Join thousands who save hours every week on travel planning, restaurant discovery, and smart
+        shopping.
       </p>
       <div className="mt-6">
         <Button className="w-full sm:w-auto" href="/app">
-          Get started
+          Start planning free
         </Button>
       </div>
     </div>
@@ -49,32 +50,35 @@ function Sitemap() {
   return (
     <>
       <div>
-        <SitemapHeading>Product</SitemapHeading>
+        <SitemapHeading>Travel</SitemapHeading>
         <SitemapLinks>
-          <SitemapLink href="/pricing">Pricing</SitemapLink>
-          <SitemapLink href="#">Analysis</SitemapLink>
-          <SitemapLink href="#">API</SitemapLink>
+          <SitemapLink href="/app">Flight Search</SitemapLink>
+          <SitemapLink href="/app">Hotel Booking</SitemapLink>
+          <SitemapLink href="/app">Trip Planning</SitemapLink>
+        </SitemapLinks>
+      </div>
+      <div>
+        <SitemapHeading>Dining</SitemapHeading>
+        <SitemapLinks>
+          <SitemapLink href="/app">Restaurant Finder</SitemapLink>
+          <SitemapLink href="/app">Reviews & Ratings</SitemapLink>
+          <SitemapLink href="/app">Reservations</SitemapLink>
+        </SitemapLinks>
+      </div>
+      <div>
+        <SitemapHeading>Shopping</SitemapHeading>
+        <SitemapLinks>
+          <SitemapLink href="/app">Price Comparison</SitemapLink>
+          <SitemapLink href="/app">Deal Finder</SitemapLink>
+          <SitemapLink href="/app">Product Reviews</SitemapLink>
         </SitemapLinks>
       </div>
       <div>
         <SitemapHeading>Company</SitemapHeading>
         <SitemapLinks>
-          <SitemapLink href="#">Careers</SitemapLink>
-          <SitemapLink href="/company">Company</SitemapLink>
-        </SitemapLinks>
-      </div>
-      <div>
-        <SitemapHeading>Support</SitemapHeading>
-        <SitemapLinks>
-          <SitemapLink href="#">Help center</SitemapLink>
-          <SitemapLink href="#">Community</SitemapLink>
-        </SitemapLinks>
-      </div>
-      <div>
-        <SitemapHeading>Company</SitemapHeading>
-        <SitemapLinks>
-          <SitemapLink href="#">Terms of service</SitemapLink>
-          <SitemapLink href="#">Privacy policy</SitemapLink>
+          <SitemapLink href="#">About Us</SitemapLink>
+          <SitemapLink href="#">Help Center</SitemapLink>
+          <SitemapLink href="#">API Access</SitemapLink>
         </SitemapLinks>
       </div>
     </>
@@ -141,9 +145,7 @@ function SocialLinks() {
 }
 
 function Copyright() {
-  return (
-    <div className="text-sm/6 text-gray-950">&copy; {new Date().getFullYear()} Agentive Inc.</div>
-  );
+  return <div className="text-sm/6 text-gray-950">&copy; {new Date().getFullYear()} Agentive</div>;
 }
 
 export function Footer() {

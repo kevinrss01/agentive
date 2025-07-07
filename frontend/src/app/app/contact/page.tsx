@@ -12,8 +12,8 @@ const teamMembers = [
   },
   {
     name: 'Kevin',
-    linkedin: '',
-    twitter: '',
+    linkedin: 'https://www.linkedin.com/in/kevin-rousseau01/',
+    twitter: 'https://x.com/kevinrss_',
   },
   {
     name: 'Alexandre Chs',
