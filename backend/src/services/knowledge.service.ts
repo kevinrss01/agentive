@@ -102,21 +102,60 @@ export class KnowledgeService {
   async getUserKnowledgeContext(userId: number | undefined): Promise<string> {
     if (!userId) return '';
 
-    const { data, error } = await supabase
-      .from('knowledge')
-      .select('content')
-      .eq('user_id', userId);
+    let city: string | undefined;
+    let postalCode: string | undefined;
+    let country: string | undefined;
 
-    if (error || !data) {
-      console.error('Error fetching user knowledge:', error);
-      return '';
+    try {
+      const { data: userData, error } = await supabase
+        .from('user')
+        .select('city, postal_code, country')
+        .eq('id', userId)
+        .single();
+
+      if (error) {
+        console.error('Error fetching user info:', error);
+      } else if (userData) {
+        ({
+          city,
+          postal_code: postalCode,
+          country,
+        } = userData as {
+          city?: string;
+          postal_code?: string;
+          country?: string;
+        });
+      }
+    } catch (err) {
+      console.error('Unexpected error fetching user info:', err);
     }
 
-    const joined = data
-      .map((k) => k.content)
-      .filter(Boolean)
-      .join('\n');
+    let knowledgeLines: string[] = [];
+    try {
+      const { data, error } = await supabase
+        .from('knowledge')
+        .select('content')
+        .eq('user_id', userId);
 
-    return joined;
+      if (error) {
+        console.error('Error fetching user knowledge:', error);
+      } else if (data) {
+        knowledgeLines = data.map((k) => k.content).filter(Boolean);
+      }
+    } catch (err) {
+      console.error('Unexpected error fetching user knowledge:', err);
+    }
+
+    const parts: string[] = [];
+    parts.push(`User city is ${city ?? 'unknown'}`);
+    parts.push(`User postal code is ${postalCode ?? 'unknown'}`);
+    parts.push(`User country is ${country ?? 'unknown'}`);
+
+    if (knowledgeLines.length > 0) {
+      parts.push('Stored knowledge:');
+      parts.push(...knowledgeLines);
+    }
+
+    return parts.join('\n');
   }
 }
