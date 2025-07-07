@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '@/lib/utils';
 import { JSX } from 'react/jsx-runtime';
 import { useAuth } from '@/hooks/useAuth';
+import Link from 'next/link';
 
 export const FloatingNav = ({
   navItems,
@@ -41,7 +42,7 @@ export const FloatingNav = ({
         {logo && <div className="mr-1">{logo}</div>}
         {navItems.map(
           (navItem: { name: string; link: string; icon?: JSX.Element }, idx: number) => (
-            <a
+            <Link
               key={`link=${idx}`}
               href={navItem.link}
               className={cn(
@@ -50,17 +51,17 @@ export const FloatingNav = ({
             >
               <span className="block sm:hidden">{navItem.icon}</span>
               <span className="hidden sm:block text-sm">{navItem.name}</span>
-            </a>
+            </Link>
           )
         )}
         {!isAuthenticated ? (
-          <a
+          <Link
             href="/login"
             className="border text-sm font-medium relative border-neutral-200 dark:border-white/[0.2] text-black dark:text-white px-4 py-2 rounded-full"
           >
             <span>Login</span>
             <span className="absolute inset-x-0 w-1/2 mx-auto -bottom-px bg-gradient-to-r from-transparent via-blue-500 to-transparent h-px" />
-          </a>
+          </Link>
         ) : (
           <div className="w-5"></div>
         )}
