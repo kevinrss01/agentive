@@ -14,16 +14,21 @@ const AppPage = () => {
 
   const placeholders = React.useMemo(
     () => [
-      'Find me the best hotels in Paris for March 2024',
-      "What's the weather like in Tokyo in April?",
-      'Top attractions to visit in New York City',
-      'Flight deals from Madrid to Rome in July',
-      'Best time to visit the Great Wall of China',
-      'Cultural festivals in India during November',
-      'Affordable hostels in Barcelona',
-      'Must-try foods in Bangkok',
-      'Visa requirements for traveling to Australia',
-      'How to get around in Amsterdam',
+      // Travel logistics
+      'Cheapest flights from Berlin to Lisbon next month',
+      'Find me boutique hotels in Kyoto for October',
+      // Food & restaurants
+      'Best tapas bars in Seville',
+      'Top vegan restaurants in New York',
+      // Shopping & activities
+      'Locate outlet malls near Milan',
+      'Where to buy local handicrafts in Marrakech',
+      // Sight-seeing & culture
+      'Hidden gems to visit around Prague',
+      'Upcoming music festivals in Austin this spring',
+      // Practical info
+      'Do I need a visa to travel to Thailand as a Canadian?',
+      'Public transport pass options in Amsterdam',
     ],
     []
   );
