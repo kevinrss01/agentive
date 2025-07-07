@@ -81,7 +81,6 @@ export class AssistantOrchestratorService {
 
       // Prepend knowledge context if available
       prompt = await this.prependKnowledgeContext(prompt, user?.id);
-      console.log('prompt avec les infos2', prompt);
 
       console.debug('initial prompt', prompt);
 
@@ -179,16 +178,14 @@ export class AssistantOrchestratorService {
 
       const isQueryCorrect = await this.verifyQueryBeforeSendingToAgent(userQuery, user?.id);
 
-      if (isQueryCorrect.response) {
-        await this.conversationsService.conversationInsert(
-          isQueryCorrect.response,
-          conversationId as UUID,
-          'assistant'
-        );
-      }
-
       if (!isQueryCorrect.isCorrect) {
         if (conversationId) {
+          await this.conversationsService.conversationInsert(
+            isQueryCorrect.response,
+            conversationId as UUID,
+            'assistant'
+          );
+
           this.socketIOService.sendFinalResponse({
             conversationId,
             message: isQueryCorrect.response,
@@ -240,6 +237,12 @@ export class AssistantOrchestratorService {
       });
 
       if (conversationId) {
+        await this.conversationsService.conversationInsert(
+          readableResponse,
+          conversationId as UUID,
+          'assistant'
+        );
+
         console.log(`📤 Sending final response to room ${conversationId}`);
         this.socketIOService.sendFinalResponse({
           conversationId,
