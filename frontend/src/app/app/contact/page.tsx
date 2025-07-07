@@ -6,9 +6,9 @@ import { FaXTwitter } from 'react-icons/fa6';
 
 const teamMembers = [
   {
-    name: 'Nano',
-    linkedin: '',
-    twitter: '',
+    name: 'Naomi',
+    linkedin: 'https://www.linkedin.com/in/naomi-rose/',
+    twitter: 'https://x.com/ia_nano_',
   },
   {
     name: 'Kevin',
