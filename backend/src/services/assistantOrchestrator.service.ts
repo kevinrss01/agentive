@@ -26,21 +26,14 @@ export class AssistantOrchestratorService {
     throw new Error('No valid input provided. Please provide either text or an audio file.');
   };
 
-  verifyQueryBeforeSendingToAgent = async (userQuery: string, conversationId: string) => {
+  verifyQueryBeforeSendingToAgent = async (userQuery: string) => {
     const prompt = this.promptsService.getPromptToVerifyQueryBeforeSendingToAgent(userQuery);
+
     const llamaInstructions = instructions.llamaBaseInstructions;
     const llamaResponse = await this.llamaService.promptLlama({
       instructions: llamaInstructions,
       prompt,
     });
-
-    if (conversationId) {
-      await this.conversationsService.conversationInsert(
-        llamaResponse,
-        conversationId as UUID,
-        'assistant'
-      );
-    }
 
     return {
       isCorrect: llamaResponse.toLowerCase().includes('true'),
@@ -52,12 +45,10 @@ export class AssistantOrchestratorService {
     conversationHistory,
     newMessage,
     conversationId,
-    user,
   }: {
     conversationHistory: Message[];
     newMessage: string;
     conversationId?: string;
-    user?: User;
   }) => {
     try {
       if (conversationId) {
@@ -170,7 +161,15 @@ export class AssistantOrchestratorService {
         this.socketIOService.sendProgress(conversationId, 'Processing your request...');
       }
 
-      const isQueryCorrect = await this.verifyQueryBeforeSendingToAgent(userQuery, conversationId);
+      const isQueryCorrect = await this.verifyQueryBeforeSendingToAgent(userQuery);
+
+      if (isQueryCorrect.response) {
+        await this.conversationsService.conversationInsert(
+          isQueryCorrect.response,
+          conversationId as UUID,
+          'assistant'
+        );
+      }
 
       if (!isQueryCorrect.isCorrect) {
         if (conversationId) {
