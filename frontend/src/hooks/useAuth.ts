@@ -38,6 +38,7 @@ export const useAuth = () => {
   const logout = useCallback(() => {
     localStorage.removeItem('user');
     localStorage.removeItem('accessToken');
+    localStorage.removeItem('authVerified');
 
     setAuthState({
       user: null,
@@ -53,6 +54,17 @@ export const useAuth = () => {
     const initializeAuth = async () => {
       const user = localStorage.getItem('user');
       const accessToken = localStorage.getItem('accessToken');
+      const authVerified = localStorage.getItem('authVerified');
+
+      if (authVerified === 'true' && user) {
+        setAuthState((prev) => ({
+          user: JSON.parse(user),
+          accessToken,
+          isLoading: false,
+          isAuthenticated: true,
+        }));
+        return;
+      }
 
       if (user && accessToken) {
         try {
@@ -76,6 +88,7 @@ export const useAuth = () => {
               isLoading: false,
               isAuthenticated: true,
             });
+            localStorage.setItem('authVerified', 'true');
           } else {
             displayToast.error(
               'An error occurred while logging in, please try again or contact the support team.'
@@ -90,7 +103,7 @@ export const useAuth = () => {
           logout();
         }
       } else {
-        if (!user && !accessToken) {
+        if (!user && !accessToken && !authState.isLoading) {
           router.push('/login');
           logout();
         }
@@ -99,11 +112,12 @@ export const useAuth = () => {
     };
 
     initializeAuth();
-  }, [logout]);
+  }, []);
 
   const login = (user: User, accessToken: string) => {
     localStorage.setItem('user', JSON.stringify(user));
     localStorage.setItem('accessToken', accessToken);
+    localStorage.setItem('authVerified', 'true');
 
     setAuthState({
       user,
