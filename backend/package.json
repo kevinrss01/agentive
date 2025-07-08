@@ -50,6 +50,7 @@
     "eslint": "^9.29.0",
     "eslint-config-prettier": "^10.1.5",
     "eslint-plugin-prettier": "^5.5.0",
+    "fix-esm-import-path": "^1.10.2",
     "globals": "^16.2.0",
     "nodemon": "^3.1.10",
     "prettier": "^3.6.2",

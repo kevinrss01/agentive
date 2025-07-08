@@ -93,6 +93,9 @@ importers:
       eslint-plugin-prettier:
         specifier: ^5.5.0
         version: 5.5.1(eslint-config-prettier@10.1.5(eslint@9.30.0(jiti@2.4.2)))(eslint@9.30.0(jiti@2.4.2))(prettier@3.6.2)
+      fix-esm-import-path:
+        specifier: ^1.10.2
+        version: 1.10.2
       globals:
         specifier: ^16.2.0
         version: 16.2.0
@@ -4787,6 +4790,10 @@ packages:
 
   find-yarn-workspace-root2@1.2.16:
     resolution: {integrity: sha512-hr6hb1w8ePMpPVUK39S4RlwJzi+xPLuVuG8XlwXU3KD5Yn3qgBWVfy3AzNlDhWvE1EORCE65/Qm26rFQt3VLVA==}
+
+  fix-esm-import-path@1.10.2:
+    resolution: {integrity: sha512-5xH9letWyiYkMqFSThB8zSrVy3HKjzPdR8VG+IgkbFztkJnKLZEwVWzJNiUoWaRRkvuP+ryvbp7QJhY9Co+ZWA==}
+    hasBin: true
 
   flat-cache@4.0.1:
     resolution: {integrity: sha512-f7ccFPK3SXFHpx15UIGyRJ/FJQctuKZ0zVuN3frBo4HnK3cay9VEW0R6yPYFHC0AgqhukPzKjq22t5DmAyqGyw==}
@@ -13988,6 +13995,12 @@ snapshots:
     dependencies:
       micromatch: 4.0.8
       pkg-dir: 4.2.0
+
+  fix-esm-import-path@1.10.2:
+    dependencies:
+      debug: 4.4.1(supports-color@8.1.1)
+    transitivePeerDependencies:
+      - supports-color
 
   flat-cache@4.0.1:
     dependencies:
