@@ -210,10 +210,6 @@ function ChatBubble({ message }: { message: ConversationMessage }) {
 const ChatInterface = ({ messages }: { messages: ConversationMessage[] }) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
-
   const progressMessage = messages.find((msg) => msg.isProgress);
   const displayMessages = messages.filter((msg) => !msg.isProgress);
 
