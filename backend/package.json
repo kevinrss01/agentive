@@ -22,6 +22,7 @@
   "license": "ISC",
   "packageManager": "pnpm@10.8.0",
   "dependencies": {
+    "@mendable/firecrawl-js": "^1.29.1",
     "@openai/agents": "^0.0.10",
     "@supabase/supabase-js": "^2.50.2",
     "@types/jsonwebtoken": "^9.0.10",

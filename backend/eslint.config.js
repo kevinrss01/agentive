@@ -9,14 +9,14 @@ module.exports = tseslint.config(
   {
     ignores: ['dist/**', 'node_modules/**', '*.js', '!eslint.config.js'],
   },
-  
+
   // Base JavaScript config
   js.configs.recommended,
-  
+
   // TypeScript configs
   ...tseslint.configs.recommended,
   ...tseslint.configs.recommendedTypeChecked,
-  
+
   // Global settings for all files
   {
     languageOptions: {
@@ -32,7 +32,7 @@ module.exports = tseslint.config(
       },
     },
   },
-  
+
   // TypeScript specific rules
   {
     files: ['**/*.ts'],
@@ -54,9 +54,11 @@ module.exports = tseslint.config(
           checksVoidReturn: false,
         },
       ],
+      '@typescript-eslint/no-unsafe-assignment': 'off',
+      '@typescript-eslint/no-unsafe-call': 'off',
     },
   },
-  
+
   // Prettier config (must be last)
   eslintConfigPrettier,
   {
@@ -67,4 +69,4 @@ module.exports = tseslint.config(
       'prettier/prettier': 'error',
     },
   }
-); 
+);

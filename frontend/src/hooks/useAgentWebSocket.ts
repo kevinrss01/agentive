@@ -12,10 +12,29 @@ interface FinalResponseMessage {
   message: string;
   timestamp: Date;
   isAskingForMoreInformation?: boolean;
+  screenshotsWithUrls?: { originalUrl: string; screenshotUrl: string }[];
 }
 
 interface ErrorMessage {
   error: string;
+  timestamp: Date;
+}
+
+interface AgentActionMessage {
+  type: 'agent-action';
+  action: 'searching' | 'analyzing' | 'visiting' | 'completed';
+  details: {
+    description: string;
+    metadata?: {
+      query?: string;
+      source?: string;
+      count?: number;
+      sources?: string[];
+      duration?: string;
+      error?: string;
+      [key: string]: any;
+    };
+  };
   timestamp: Date;
 }
 
@@ -24,6 +43,7 @@ interface UseAgentWebSocketProps {
   onProgress?: (message: ProgressMessage) => void;
   onFinalResponse?: (message: FinalResponseMessage) => void;
   onError?: (error: ErrorMessage) => void;
+  onAgentAction?: (action: AgentActionMessage) => void;
 }
 
 // Singleton socket instance
@@ -62,6 +82,7 @@ export const useAgentWebSocket = ({
   onProgress,
   onFinalResponse,
   onError,
+  onAgentAction,
 }: UseAgentWebSocketProps) => {
   const [isConnected, setIsConnected] = useState<boolean>(false);
   const [currentRoom, setCurrentRoom] = useState<string | null>(null);
@@ -70,12 +91,13 @@ export const useAgentWebSocket = ({
     onProgress?: (message: ProgressMessage) => void;
     onFinalResponse?: (message: FinalResponseMessage) => void;
     onError?: (error: ErrorMessage) => void;
+    onAgentAction?: (action: AgentActionMessage) => void;
   }>({});
 
   // Update handlers ref
   useEffect(() => {
-    handlersRef.current = { onProgress, onFinalResponse, onError };
-  }, [onProgress, onFinalResponse, onError]);
+    handlersRef.current = { onProgress, onFinalResponse, onError, onAgentAction };
+  }, [onProgress, onFinalResponse, onError, onAgentAction]);
 
   useEffect(() => {
     const socket = getSocket();
@@ -122,6 +144,11 @@ export const useAgentWebSocket = ({
       handlersRef.current.onError?.(error);
     };
 
+    const handleAgentAction = (action: AgentActionMessage) => {
+      console.log('🎯 Agent action:', action);
+      handlersRef.current.onAgentAction?.(action);
+    };
+
     const handleConnectError = (error: Error) => {
       console.error('🔴 Connection error:', error.message);
     };
@@ -138,6 +165,7 @@ export const useAgentWebSocket = ({
     socket.on('agent-progress', handleAgentProgress);
     socket.on('agent-response', handleAgentResponse);
     socket.on('agent-error', handleAgentError);
+    socket.on('agent-action', handleAgentAction);
     socket.on('connect_error', handleConnectError);
 
     return () => {
@@ -148,6 +176,7 @@ export const useAgentWebSocket = ({
       socket.off('agent-progress', handleAgentProgress);
       socket.off('agent-response', handleAgentResponse);
       socket.off('agent-error', handleAgentError);
+      socket.off('agent-action', handleAgentAction);
       socket.off('connect_error', handleConnectError);
 
       releaseSocket();

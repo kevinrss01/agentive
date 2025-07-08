@@ -13,9 +13,25 @@ export interface FinalResponseMessage {
   message: string;
   timestamp: Date;
   isAskingForMoreInformation: boolean;
+  screenshotsWithUrls?: { originalUrl: string; screenshotUrl: string }[];
 }
 
-export type AgentMessage = ProgressMessage | FinalResponseMessage;
+export interface AgentActionMessage {
+  type: 'agent-action';
+  action: 'searching' | 'analyzing' | 'visiting' | 'completed';
+  details: {
+    description: string;
+    metadata?: {
+      query?: string;
+      source?: string;
+      count?: number;
+      [key: string]: any;
+    };
+  };
+  timestamp: Date;
+}
+
+export type AgentMessage = ProgressMessage | FinalResponseMessage | AgentActionMessage;
 
 export class SocketIOService {
   private static instance: SocketIOService;
@@ -100,10 +116,12 @@ export class SocketIOService {
     conversationId,
     message,
     isAskingForMoreInformation,
+    screenshotsWithUrls,
   }: {
     conversationId: string;
     message: string;
     isAskingForMoreInformation: boolean;
+    screenshotsWithUrls: { originalUrl: string; screenshotUrl: string }[];
   }): void {
     if (!this.io) {
       console.warn('Socket.IO not initialized');
@@ -115,6 +133,7 @@ export class SocketIOService {
       message,
       timestamp: new Date(),
       isAskingForMoreInformation,
+      screenshotsWithUrls,
     };
 
     // Check how many clients are in the room
@@ -124,6 +143,34 @@ export class SocketIOService {
 
     this.io.to(conversationId).emit('agent-response', finalMessage);
     console.log(`📤 Final response sent to room ${conversationId}`);
+  }
+
+  /**
+   * Send a detailed agent action event to a specific room
+   */
+  sendAgentAction(
+    conversationId: string,
+    action: AgentActionMessage['action'],
+    description: string,
+    metadata?: AgentActionMessage['details']['metadata']
+  ): void {
+    if (!this.io) {
+      console.warn('Socket.IO not initialized');
+      return;
+    }
+
+    const actionMessage: AgentActionMessage = {
+      type: 'agent-action',
+      action,
+      details: {
+        description,
+        metadata,
+      },
+      timestamp: new Date(),
+    };
+
+    this.io.to(conversationId).emit('agent-action', actionMessage);
+    console.log(`📤 Agent action sent to room ${conversationId}: ${action} - ${description}`);
   }
 
   /**

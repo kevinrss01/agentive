@@ -64,14 +64,29 @@ export class ConversationsService {
 
     const { data: messages, error } = await supabase
       .from('conversation_message')
-      .select('*')
+      .select(
+        `
+        *,
+        conversation_message_screenshots (
+          id,
+          original_url,
+          screenshot_url,
+          created_at
+        )
+      `
+      )
       .eq('conversation_id', conversation.id)
       .order('created_at', { ascending: true });
 
     return { data: messages, error };
   }
 
-  async conversationInsert(content: string, conversationUUID: UUID, role: string) {
+  async conversationInsert(
+    content: string,
+    conversationUUID: UUID,
+    role: string,
+    screenshotsWithUrls?: { originalUrl: string; screenshotUrl: string }[]
+  ) {
     const { data: conversation, error: convError } = await supabase
       .from('conversation')
       .select('*')
@@ -82,11 +97,37 @@ export class ConversationsService {
       throw new Error('Conversation not found');
     }
 
-    await supabase.from('conversation_message').insert({
-      content,
-      conversation_id: conversation.id,
-      created_at: new Date().toISOString(),
-      role,
-    });
+    const { data: messageData, error: messageError } = await supabase
+      .from('conversation_message')
+      .insert({
+        content,
+        conversation_id: conversation.id,
+        created_at: new Date().toISOString(),
+        role,
+      })
+      .select('id')
+      .single();
+
+    if (messageError || !messageData) {
+      throw new Error('Failed to insert message');
+    }
+
+    // Save screenshots if provided
+    if (screenshotsWithUrls && screenshotsWithUrls.length > 0) {
+      const screenshotInserts = screenshotsWithUrls.map((screenshot) => ({
+        conversation_message_id: messageData.id,
+        original_url: screenshot.originalUrl,
+        screenshot_url: screenshot.screenshotUrl,
+        created_at: new Date().toISOString(),
+      }));
+
+      const { error: screenshotError } = await supabase
+        .from('conversation_message_screenshots')
+        .insert(screenshotInserts);
+
+      if (screenshotError) {
+        console.error('Error saving screenshots:', screenshotError);
+      }
+    }
   }
 }

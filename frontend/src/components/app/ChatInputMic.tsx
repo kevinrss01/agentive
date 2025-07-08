@@ -7,27 +7,54 @@ import { wait } from '@/utils/utils';
 import { FaSquare } from 'react-icons/fa';
 import { useAuth } from '@/hooks/useAuth';
 
-// Quick suggestion bubbles covering destinations, food, flights, shopping, activities
 const quickSuggestions = [
-  { id: 1, text: 'Weekend in Paris', query: 'Plan a 3-day getaway to Paris with must-see spots' },
-  { id: 2, text: 'Best sushi in Tokyo', query: 'Find top-rated sushi restaurants in Tokyo' },
+  {
+    id: 1,
+    text: 'Weekend in Paris',
+    query:
+      'Plan a 3-day romantic weekend in Paris for 2 people with budget €800, including Eiffel Tower, Louvre, and cozy bistros',
+  },
+  {
+    id: 2,
+    text: 'Best sushi in Tokyo',
+    query:
+      'Find top-rated sushi restaurants in Shibuya or Ginza district with English menu and under ¥8000 per person',
+  },
   {
     id: 3,
     text: 'Cheap flights Rome → Athens',
-    query: 'Find the cheapest flights from Rome to Athens next month',
+    query:
+      'Find cheapest flights from Rome FCO to Athens ATH for March 15-22, flexible ±2 days, economy class',
   },
-  { id: 4, text: 'Outlet shopping Milan', query: 'Locate the best fashion outlets near Milan' },
-  { id: 5, text: 'Family fun in Barcelona', query: 'Suggest kid-friendly activities in Barcelona' },
+  {
+    id: 4,
+    text: 'Outlet shopping Milan',
+    query:
+      'Locate luxury fashion outlets within 50km of Milan city center with shuttle service and tax-free shopping',
+  },
+  {
+    id: 5,
+    text: 'Family fun in Barcelona',
+    query:
+      'Suggest 5 kid-friendly activities in Barcelona for children ages 6-12, including indoor options if it rains',
+  },
   {
     id: 6,
     text: 'Nightlife in Berlin',
-    query: 'What are the best clubs and bars to experience Berlin nightlife?',
+    query:
+      'Recommend techno clubs and cocktail bars in Kreuzberg/Friedrichshain with no strict dress code for Saturday night',
   },
-  { id: 7, text: 'Sneakers in London', query: 'Where can I buy exclusive sneakers in London?' },
+  {
+    id: 7,
+    text: 'Sneakers in London',
+    query:
+      'Where to buy limited edition Nike or Adidas sneakers in London, size UK 9, including reseller shops',
+  },
   {
     id: 8,
     text: 'Handmade ceramics Lisbon',
-    query: 'Find shops selling handmade ceramics in Lisbon',
+    query:
+      'Find artisan ceramic shops in Lisbon old town selling traditional Portuguese pottery under €50 per piece',
   },
 ];
 
@@ -244,7 +271,7 @@ const ChatInputMic = ({
       </div>
 
       {/* Quick suggestion bubbles */}
-      <div className="flex gap-2 mt-3 flex-wrap items-center justify-center">
+      <div className="flex gap-2 mt-7 flex-wrap items-center justify-center">
         {quickSuggestions.map((suggestion) => (
           <button
             key={suggestion.id}

@@ -5,12 +5,15 @@ import { displayToast } from '@/utils/sonnerToast';
 
 export type ConversationMessage = {
   id: string | number;
-  type?: 'text' | 'audio';
-  role: 'user' | 'assistant';
+  type?: 'text' | 'audio' | 'action';
+  role: 'user' | 'assistant' | 'system';
   content: string;
   timestamp: Date;
   isProgress?: boolean;
   isAskingForMoreInformation?: boolean;
+  actionType?: 'searching' | 'analyzing' | 'visiting' | 'completed';
+  actionMetadata?: Record<string, any>;
+  screenshotsWithUrls?: { originalUrl: string; screenshotUrl: string }[];
 };
 
 export function useConversation(conversationId: string | undefined) {
@@ -96,6 +99,8 @@ export function useConversation(conversationId: string | undefined) {
             role: m.role,
             content: m.content,
             timestamp: new Date(m.created_at),
+            isAskingForMoreInformation: m.isAskingForMoreInformation,
+            screenshotsWithUrls: m.conversation_message_screenshots || [],
           }));
           setMessages(initial);
         } catch (err: any) {
@@ -138,12 +143,47 @@ export function useConversation(conversationId: string | undefined) {
         return [...prev, newMsg];
       });
     },
+    onAgentAction: (action) => {
+      // Create a formatted message for the agent action
+      let actionMessage = action.details.description;
+
+      // Add additional context based on the action type
+      if (action.action === 'searching' && action.details.metadata?.query) {
+        actionMessage = `🔍 Searching: "${action.details.metadata.query}"`;
+      } else if (action.action === 'visiting' && action.details.metadata?.sources) {
+        const sources = action.details.metadata.sources as string[];
+        actionMessage = `🌐 Visiting: ${sources.join(', ')}`;
+      } else if (action.action === 'analyzing' && action.details.metadata?.duration) {
+        actionMessage = `📊 ${action.details.description} (${action.details.metadata.duration}s)`;
+      } else if (action.action === 'completed' && action.details.metadata?.count) {
+        actionMessage = `✅ ${action.details.description} - Found ${action.details.metadata.count} sources`;
+      }
+
+      setMessages((prev) => {
+        const newMsg: ConversationMessage = {
+          id: `action-${Date.now()}-${Math.random()}`,
+          type: 'action',
+          role: 'system',
+          content: actionMessage,
+          timestamp: new Date(action.timestamp),
+          isProgress: false,
+          actionType: action.action,
+          actionMetadata: action.details.metadata,
+        };
+
+        // Add as a new message to show agent actions
+        return [...prev, newMsg];
+      });
+    },
     onFinalResponse: (final) => {
       setIsProcessing(false);
       setMessages((prev) => {
-        const withoutProgress = prev.filter((m) => m.id !== progressMessageIdRef.current);
+        // Remove progress messages and action messages when final response arrives
+        const withoutProgressAndActions = prev.filter(
+          (m) => m.id !== progressMessageIdRef.current && m.type !== 'action'
+        );
         return [
-          ...withoutProgress,
+          ...withoutProgressAndActions,
           {
             id: `assistant-${Date.now()}`,
             type: 'text',
@@ -151,6 +191,7 @@ export function useConversation(conversationId: string | undefined) {
             content: final.message,
             timestamp: new Date(final.timestamp),
             isAskingForMoreInformation: final.isAskingForMoreInformation,
+            screenshotsWithUrls: final.screenshotsWithUrls,
           },
         ];
       });

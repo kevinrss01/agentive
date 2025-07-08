@@ -15,13 +15,31 @@ export class AgentService {
   constructor() {
     this.agent = new Agent({
       name: 'Travel Research Assistant',
-      model: 'o4-mini',
+      model: 'gpt-4o-mini',
       tools: [
         webSearchTool({
           searchContextSize: 'medium',
         }),
       ],
       instructions: instructions.travelAgent,
+    });
+
+    this.agent.on('agent_start', (context, agentInstance) => {
+      console.log(`[${agentInstance.name}] Agent started processing.`);
+      console.log(JSON.stringify(context, null, 2));
+    });
+
+    this.agent.on('agent_tool_start', (_, tool, details) => {
+      console.log(`➡️ Agent is about to use tool: "${tool.name}"`);
+      console.log(`Tool input:`, details.toolCall);
+
+      console.log(JSON.stringify(details, null, 2));
+      console.log(JSON.stringify(tool, null, 2));
+    });
+
+    this.agent.on('agent_handoff', (context, nextAgent) => {
+      console.log(`🤝 Agent handing off to sub-agent: ${nextAgent.name}`);
+      console.log(JSON.stringify(context, null, 2));
     });
   }
 

@@ -70,6 +70,38 @@ export type Database = {
           },
         ];
       };
+      conversation_message_screenshots: {
+        Row: {
+          id: number;
+          conversation_message_id: number;
+          original_url: string;
+          screenshot_url: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: number;
+          conversation_message_id: number;
+          original_url: string;
+          screenshot_url: string;
+          created_at?: string;
+        };
+        Update: {
+          id?: number;
+          conversation_message_id?: number;
+          original_url?: string;
+          screenshot_url?: string;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'conversation_message_screenshots_conversation_message_id_fkey';
+            columns: ['conversation_message_id'];
+            isOneToOne: false;
+            referencedRelation: 'conversation_message';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
       knowledge: {
         Row: {
           confidence_score: number | null;

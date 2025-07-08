@@ -39,6 +39,68 @@ function ChatBubble({ message }: { message: ConversationMessage }) {
           {user ? 'You' : 'Assistant'}
         </div>
 
+        {/* Display screenshots above the bubble */}
+        {message.screenshotsWithUrls && message.screenshotsWithUrls.length > 0 && !user && (
+          <div className="mb-3 space-y-2">
+            <div className="text-xs text-gray-500 mb-2">
+              📸 Screenshots ({message.screenshotsWithUrls.length})
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-2xl">
+              {message.screenshotsWithUrls.map((item, index) => {
+                const handleClick = () => {
+                  console.log('Screenshot clicked, item:', item);
+                  console.log('Original URL:', item.originalUrl);
+
+                  if (!item.originalUrl) {
+                    console.error('No original URL found');
+                    return;
+                  }
+
+                  // Ensure URL has protocol
+                  let url = item.originalUrl;
+                  if (!url.startsWith('http://') && !url.startsWith('https://')) {
+                    url = 'https://' + url;
+                  }
+
+                  console.log('Opening URL:', url);
+                  try {
+                    window.open(url, '_blank', 'noopener,noreferrer');
+                  } catch (error) {
+                    console.error('Error opening URL:', error);
+                  }
+                };
+
+                return (
+                  <motion.div
+                    key={index}
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ duration: 0.3, delay: index * 0.1 }}
+                    className="relative group cursor-pointer"
+                    onClick={handleClick}
+                  >
+                    <img
+                      src={item.screenshotUrl}
+                      alt={`Screenshot of ${item.originalUrl}`}
+                      className="w-full h-40 sm:h-48 object-cover rounded-lg shadow-md border border-gray-200 hover:shadow-lg transition-shadow"
+                    />
+                    <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-10 rounded-lg transition-opacity flex items-center justify-center pointer-events-none">
+                      <div className="opacity-0 group-hover:opacity-100 bg-black bg-opacity-75 text-white text-xs px-2 py-1 rounded transition-opacity">
+                        Visit website
+                      </div>
+                    </div>
+                    <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-2 rounded-b-lg pointer-events-none">
+                      <p className="text-white text-xs truncate" title={item.originalUrl}>
+                        {item.originalUrl}
+                      </p>
+                    </div>
+                  </motion.div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
         <div
           className={`
             px-4 py-3 rounded-2xl max-w-full break-words relative overflow-visible

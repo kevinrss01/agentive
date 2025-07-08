@@ -11,7 +11,7 @@ type KnowledgeInsertRequest = Omit<JWTAuthenticatedRequest, 'body'> & {
 };
 
 type KnowledgeResult = {
-  isRevelant: boolean;
+  isRelevant: boolean;
   content: string;
   confidence_score: number;
 };
@@ -46,7 +46,7 @@ export class KnowledgeController {
 
     const result = JSON.parse(cleanedContent) as KnowledgeResult;
 
-    if (!result.isRevelant) return;
+    if (!result.isRelevant) return;
 
     await this.#knowledgeService.knowledgeInsert(result, req.user.id);
 

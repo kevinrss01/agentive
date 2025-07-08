@@ -10,6 +10,7 @@ import { ConversationsService } from './conversations.service';
 import { UUID } from 'crypto';
 import { KnowledgeService } from './knowledge.service';
 import { User } from '@/types/db.types';
+import { FirecrawlService } from './firecrawl.service';
 
 export class AssistantOrchestratorService {
   private speechToTextService = new SpeechToTextService();
@@ -19,6 +20,7 @@ export class AssistantOrchestratorService {
   private socketIOService = SocketIOService.getInstance();
   private conversationsService = new ConversationsService();
   private knowledgeService = new KnowledgeService();
+  private firecrawlService = new FirecrawlService();
 
   private async prependKnowledgeContext(prompt: string, userId?: number) {
     const knowledgeContext = await this.knowledgeService.getUserKnowledgeContext(userId);
@@ -26,6 +28,39 @@ export class AssistantOrchestratorService {
     if (!knowledgeContext) return prompt;
 
     return `### USER KNOWLEDGE CONTEXT ###\n"""\n${knowledgeContext}\n"""\n\n${prompt}`;
+  }
+
+  private extractUrlsFromText(text: string): string[] {
+    const urlRegex =
+      /https?:\/\/(www\.)?[-a-zA-Z0-9@:%._+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_+.~#?&//=]*)/g;
+    const matches = text.match(urlRegex);
+    return matches ? [...new Set(matches)] : []; // Remove duplicates
+  }
+
+  private async getScreenshotsWithFallback(
+    urls: string[],
+    maxScreenshots: number = 2
+  ): Promise<{ originalUrl: string; screenshotUrl: string }[]> {
+    const screenshotsWithUrls: { originalUrl: string; screenshotUrl: string }[] = [];
+
+    for (const url of urls) {
+      if (screenshotsWithUrls.length >= maxScreenshots) break;
+
+      try {
+        const screenshot = await this.firecrawlService.getScreenshotFromUrl(url);
+        if (screenshot) {
+          screenshotsWithUrls.push({
+            originalUrl: url,
+            screenshotUrl: screenshot,
+          });
+        }
+      } catch (error) {
+        console.warn(`Failed to get screenshot for URL: ${url}`, error);
+        // Continue to next URL
+      }
+    }
+
+    return screenshotsWithUrls;
   }
 
   getTextFromInput = (input: { text?: string; audioFile?: AudioFile }) => {
@@ -133,22 +168,55 @@ export class AssistantOrchestratorService {
       });
 
       if (conversationId) {
+        this.socketIOService.sendProgress(
+          conversationId,
+          'Getting some images for you... Almost done.'
+        );
+      }
+
+      const urlsFromResponse = this.extractUrlsFromText(readableResponse);
+      const screenshotsWithUrls = await this.getScreenshotsWithFallback(urlsFromResponse, 2);
+
+      console.log('screenshotsWithUrls', screenshotsWithUrls);
+
+      if (conversationId) {
         await this.conversationsService.conversationInsert(
           readableResponse,
           conversationId as UUID,
-          'assistant'
+          'assistant',
+          screenshotsWithUrls
         );
       }
 
       if (conversationId) {
+        console.log(`📤 Sending final response to room ${conversationId}`);
         this.socketIOService.sendFinalResponse({
           conversationId,
           message: readableResponse,
+          screenshotsWithUrls,
           isAskingForMoreInformation: false,
         });
       }
+
+      return {
+        readableResponse,
+        screenshotsWithUrls,
+      };
     } catch (error) {
       console.error('Error in processNewMessage', error);
+
+      if (conversationId) {
+        const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+        this.socketIOService.sendToRoom(conversationId, 'agent-error', {
+          error: errorMessage,
+          timestamp: new Date(),
+        });
+      }
+
+      return {
+        readableResponse: '',
+        screenshotsWithUrls: [],
+      };
     }
   };
 
@@ -189,6 +257,7 @@ export class AssistantOrchestratorService {
           this.socketIOService.sendFinalResponse({
             conversationId,
             message: isQueryCorrect.response,
+            screenshotsWithUrls: [],
             isAskingForMoreInformation: true,
           });
           return;
@@ -237,21 +306,38 @@ export class AssistantOrchestratorService {
       });
 
       if (conversationId) {
+        this.socketIOService.sendProgress(
+          conversationId,
+          'Getting some images for you... Almost done.'
+        );
+      }
+
+      const urlsFromResponse = this.extractUrlsFromText(readableResponse);
+      const screenshotsWithUrls = await this.getScreenshotsWithFallback(urlsFromResponse, 2);
+
+      console.log('screenshotsWithUrls', screenshotsWithUrls);
+
+      if (conversationId) {
         await this.conversationsService.conversationInsert(
           readableResponse,
           conversationId as UUID,
-          'assistant'
+          'assistant',
+          screenshotsWithUrls
         );
 
         console.log(`📤 Sending final response to room ${conversationId}`);
         this.socketIOService.sendFinalResponse({
           conversationId,
           message: readableResponse,
+          screenshotsWithUrls,
           isAskingForMoreInformation: false,
         });
       }
 
-      return readableResponse;
+      return {
+        readableResponse,
+        screenshotsWithUrls,
+      };
     } catch (error: unknown) {
       console.error('Error in processRequest', error);
 
