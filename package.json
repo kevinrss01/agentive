@@ -3,13 +3,8 @@
   "version": "1.0.0",
   "private": true,
   "description": "Hackathon Lalabai project with frontend and backend",
-  "scripts": {
-    "prepare": "husky install",
-    "postinstall": "./setup-hooks.sh"
-  },
-  "devDependencies": {
-    "husky": "^9.0.11"
-  },
+  "scripts": {},
+  "devDependencies": {},
   "dependencies": {
     "prettier": "^3.6.2"
   }
