@@ -10,6 +10,7 @@ export class AuthController {
 
   loginGoogle = async (_req: Request, res: Response): Promise<void> => {
     const baseFrontendUrl = process.env.FRONTEND_BASE_URL;
+    console.log('baseFrontendUrl', baseFrontendUrl);
     const redirectUrl = `${baseFrontendUrl}/api/auth/callback`;
     const result = await this.authService.initiateGoogleLogin(redirectUrl);
 

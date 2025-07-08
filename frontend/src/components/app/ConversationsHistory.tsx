@@ -31,12 +31,15 @@ export default function ConversationsHistory() {
   const { data: conversations, error } = useQuery({
     queryKey: ['conversationsHistory'],
     queryFn: async () => {
-      const response = await fetch(`http://localhost:4000/api/conversations`, {
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-          'Content-Type': 'application/json',
-        },
-      });
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_BASE_URL_BACKEND}/api/conversations`,
+        {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            'Content-Type': 'application/json',
+          },
+        }
+      );
       const data = await response.json();
       return data.data;
     },
