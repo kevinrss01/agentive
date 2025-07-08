@@ -24,7 +24,11 @@ const quickSuggestions = [
     query: 'What are the best clubs and bars to experience Berlin nightlife?',
   },
   { id: 7, text: 'Sneakers in London', query: 'Where can I buy exclusive sneakers in London?' },
-  { id: 8, text: 'Handmade ceramics Lisbon', query: 'Find shops selling handmade ceramics in Lisbon' },
+  {
+    id: 8,
+    text: 'Handmade ceramics Lisbon',
+    query: 'Find shops selling handmade ceramics in Lisbon',
+  },
 ];
 
 const ChatInputMic = ({
@@ -147,6 +151,8 @@ const ChatInputMic = ({
       try {
         const formData = new FormData();
         formData.append('audio', audioBlob, 'recording.webm');
+        formData.append('conversationNew', 'true');
+
         const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL_BACKEND}/api/transcribe`, {
           method: 'POST',
           headers: {

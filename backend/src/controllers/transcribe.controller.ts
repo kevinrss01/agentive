@@ -93,7 +93,7 @@ export class TranscribeController {
       }, 3000);
 
       // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-      if (req.body.conversationNew) {
+      if (req.body.conversationNew || input.audioFile) {
         await this.conversationsService.createConversationWithMessage({
           topic: userQuery,
           user_id: req.user.id,

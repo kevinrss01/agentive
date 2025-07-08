@@ -63,7 +63,7 @@ export default function SettingsPage() {
   if (isLoading) return <></>;
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100 py-8 px-4">
+    <div className="min-h-screen flex items-center justify-center py-8 px-4">
       <div className="w-full max-w-lg bg-white/80 rounded-2xl p-8 md:p-12 flex flex-col items-center">
         <h1 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-2 text-center">
           Settings
